@@ -80,12 +80,12 @@ app.get("/authSuccess", function (req, res) {
         githubEvents.sendGithubEvents(githubUsername, accessToken)
             .then(function (user) {
                 io.in(githubUsername).emit('status',
-                    {"status": "Synced GitHub Push Events.",
+                    {"status": "Synced up all events successfully!",
                         "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
                     });
             }, function (user) {
                 io.in(githubUsername).emit('status',
-                    {"status": "No data to sync up!",
+                    {"status": "No new events to fetch",
                         "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
                     });
             });

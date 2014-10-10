@@ -7,27 +7,31 @@ body{
 .header-text {
     color: #E2E2E2;
 }
-.signup-button {
+.center{
+    margin: 10%;
+}
+.signup-button{
+    margin: 5% 0;
     background:#1AC8A2;
     border: 1px solid #54FFFA;
-    width: 100%;
-}
-.container {
-    padding: 30px;
-    padding-top: 6px;
-    width: 98%;
-    margin: 0 auto;
-    background: #515151;
-    border-radius: 5px;
-}
-.margin-top-five{
-    margin-top: 5%;
 }
 .btn:hover, .btn:focus,.signup-button{
     color: #FFF;
 }
 .signup-button:hover{
     background: #19bc98;
+}
+#loading{
+    margin: 20% 0 0 35%;
+}
+
+#loading img {
+    margin-left: 18%;
+    margin-top: 2%;
+}
+#loading p{
+    font-size: 21px;
+    font-weight: 200;
 }
 @media (min-width: 600px){
     .container {

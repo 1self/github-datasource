@@ -13,10 +13,11 @@ $(document).ready(function () {
 });
 
 socket.on('status', function (data) {
-    document.getElementById('status').innerHTML = data.status;
-    setTimeout(function(){
+   $('#status').html( "<div class='jumbotron center'><h3 class='header-text'>" + data.status +
+        "</h3><p>Redirecting to QuantifiedDev. Enjoy the cool visualisations!</p></div>");
+    setTimeout(function () {
         window.location = data.redirectUrl;
-    }, 5000);
+    }, 3000);
 });
 
 
