@@ -80,17 +80,22 @@ app.get("/authSuccess", function (req, res) {
         console.log("Auth success. Fetching events")
         githubEvents.sendGithubEvents(githubUsername, accessToken)
             .then(function (user) {
-                console.log("Events fetched successfully.")
-                io.in(githubUsername).emit('status',
-                    {"status": "Synced up all events successfully!",
-                        "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
-                    });
+                setTimeout(function () {
+                    console.log("Events fetched successfully.")
+                    io.in(githubUsername).emit('status',
+                        {"status": "Synced up all events successfully!",
+                            "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
+                        });
+                }, 2000)
+
             }, function (user) {
-                console.log("No new events to fetch")
-                io.in(githubUsername).emit('status',
-                    {"status": "No new events to fetch",
-                        "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
-                    });
+                setTimeout(function () {
+                    console.log("No new events to fetch")
+                    io.in(githubUsername).emit('status',
+                        {"status": "No new events to fetch",
+                            "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
+                        });
+                }, 2000)
             });
         res.redirect("/status?githubUsername=" + githubUsername);
     } else {
