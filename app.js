@@ -77,13 +77,16 @@ app.get("/authSuccess", function (req, res) {
         var githubUsername = req.session.githubUsername;
         var accessToken = req.session.accessToken;
         var redirectUrl = process.env.DASHBOARD_URI;
+        console.log("Auth success. Fetching events")
         githubEvents.sendGithubEvents(githubUsername, accessToken)
             .then(function (user) {
+                console.log("Events fetched successfully.")
                 io.in(githubUsername).emit('status',
                     {"status": "Synced up all events successfully!",
                         "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
                     });
             }, function (user) {
+                console.log("No new events to fetch")
                 io.in(githubUsername).emit('status',
                     {"status": "No new events to fetch",
                         "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken

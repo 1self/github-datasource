@@ -13,6 +13,7 @@ $(document).ready(function () {
 });
 
 socket.on('status', function (data) {
+   console.log("Socket message received.", data.redirectUrl)
    $('#status').html( "<div class='jumbotron center'><h3 class='header-text'>" + data.status +
         "</h3><p>Redirecting to QuantifiedDev. Enjoy the cool visualisations!</p></div>");
     setTimeout(function () {
