@@ -81,26 +81,36 @@ app.get("/authSuccess", function (req, res) {
             githubEvents.sendGithubEvents(githubUsername, accessToken)
                 .then(function (user) {
                     console.log("Events fetched successfully.");
-                    var counter = io.in(githubUsername).sockets.length;
-                   /* while (counter < 1) {
+                    var counter;
+                    var interval = setInterval(function () {
                         counter = io.in(githubUsername).sockets.length;
-                    }*/
-                    console.log("Number of users in room: " + counter);
-                    io.in(githubUsername).emit('status', {
-                        "status": "Synced up all events successfully!",
-                        "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
-                    });
+                        console.log("Number of users in room: " + counter);
+                        if (counter !== 0) {
+                            console.log("Number of users in room: " + counter);
+                            io.in(githubUsername).emit('status', {
+                                "status": "Synced up all events successfully!",
+                                "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
+                            });
+                            clearInterval(interval);
+                        }
+                    }, 2000);
+
                 }, function (user) {
-                    console.log("No new events to fetch")
-                    var counter = io.in(githubUsername).sockets.length;
-                    /*while (counter < 1) {
+                    console.log("No new events to fetch");
+                    var counter;
+                    var interval = setInterval(function () {
                         counter = io.in(githubUsername).sockets.length;
-                    }*/
-                    console.log("Number of users in room: " + counter);
-                    io.in(githubUsername).emit('status', {
-                        "status": "No new events to fetch",
-                        "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
-                    });
+                        console.log("Number of users in room: " + counter);
+                        if (counter !== 0) {
+                            console.log("Number of users in room: " + counter);
+                            io.in(githubUsername).emit('status', {
+                                "status": "No new events to fetch",
+                                "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
+                            });
+                            clearInterval(interval);
+                        }
+                    }, 2000);
+
                 });
             res.redirect("/status?githubUsername=" + githubUsername);
         }
