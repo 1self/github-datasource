@@ -82,11 +82,11 @@ app.get("/authSuccess", function (req, res) {
                 .then(function (user) {
                     console.log("Events fetched successfully.");
                     var counter;
+                    //Checking number of people in the room to resolve prod issue where heroku is executing synchronously
                     var interval = setInterval(function () {
                         counter = io.in(githubUsername).sockets.length;
                         console.log("Number of users in room: " + counter);
                         if (counter !== 0) {
-                            console.log("Number of users in room: " + counter);
                             io.in(githubUsername).emit('status', {
                                 "status": "Synced up all events successfully!",
                                 "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
@@ -98,11 +98,11 @@ app.get("/authSuccess", function (req, res) {
                 }, function (user) {
                     console.log("No new events to fetch");
                     var counter;
+                    //Checking number of people in the room to resolve prod issue where heroku is executing synchronously
                     var interval = setInterval(function () {
                         counter = io.in(githubUsername).sockets.length;
                         console.log("Number of users in room: " + counter);
                         if (counter !== 0) {
-                            console.log("Number of users in room: " + counter);
                             io.in(githubUsername).emit('status', {
                                 "status": "No new events to fetch",
                                 "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
