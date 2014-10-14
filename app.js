@@ -77,20 +77,26 @@ app.get("/authSuccess", function (req, res) {
             var githubUsername = req.session.githubUsername;
             var accessToken = req.session.accessToken;
             var redirectUrl = process.env.DASHBOARD_URI;
-            console.log("Auth success. Fetching events")
+            console.log("Auth success. Fetching events");
             githubEvents.sendGithubEvents(githubUsername, accessToken)
                 .then(function (user) {
                     console.log("Events fetched successfully.");
-                    while (io.in(githubUsername).sockets[0] && !io.in(githubUsername).sockets[0].connected) {
+                    var counter = io.in(githubUsername).sockets.length;
+                    while (counter < 1) {
+                        counter = io.in(githubUsername).sockets.length;
                     }
+                    console.log("Number of users in room: " + counter);
                     io.in(githubUsername).emit('status', {
                         "status": "Synced up all events successfully!",
                         "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
                     });
                 }, function (user) {
                     console.log("No new events to fetch")
-                    while (io.in(githubUsername).sockets[0] && !io.in(githubUsername).sockets[0].connected) {
+                    var counter = io.in(githubUsername).sockets.length;
+                    while (counter < 1) {
+                        counter = io.in(githubUsername).sockets.length;
                     }
+                    console.log("Number of users in room: " + counter);
                     io.in(githubUsername).emit('status', {
                         "status": "No new events to fetch",
                         "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
