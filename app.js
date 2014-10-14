@@ -37,14 +37,14 @@ app.set('views', __dirname + '/views');
 app.set('view engine', 'html');
 
 var port = process.env.PORT || 5001;
-var server = app.listen(port, function() {
+var server = app.listen(port, function () {
     console.log("Listening on " + port);
 });
 
 var io = require('socket.io')(server);
-io.on('connection', function(socket) {
+io.on('connection', function (socket) {
     console.log("client connected..............");
-    socket.on('clientConnected', function(githubUsername) {
+    socket.on('clientConnected', function (githubUsername) {
         console.log("new client logged in." + githubUsername);
         socket.join(githubUsername);
     });
@@ -55,7 +55,7 @@ var mongoUri = process.env.DBURI;
 var mongoRepository;
 var githubEvents;
 var githubOAuth;
-mongoClient.connect(mongoUri, function(err, databaseConnection) {
+mongoClient.connect(mongoUri, function (err, databaseConnection) {
     if (err) {
         console.error("Could not connect to Mongodb with URI : " + mongoUri);
         console.error(err);
@@ -68,39 +68,43 @@ mongoClient.connect(mongoUri, function(err, databaseConnection) {
     }
 });
 
-app.get("/", function(req, res) {
+app.get("/", function (req, res) {
     res.render('index');
 });
 
-app.get("/authSuccess", function(req, res) {
-    if (req.session.githubUsername && req.session.accessToken) {
-        var githubUsername = req.session.githubUsername;
-        var accessToken = req.session.accessToken;
-        var redirectUrl = process.env.DASHBOARD_URI;
-        console.log("Auth success. Fetching events")
-        githubEvents.sendGithubEvents(githubUsername, accessToken)
-            .then(function(user) {
-                console.log("Events fetched successfully.")
-                while(io.in(githubUsername).sockets[0] && !io.in(githubUsername).sockets[0].connected){//wait};
-                io.in(githubUsername).emit('status', {
-                    "status": "Synced up all events successfully!",
-                    "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
+app.get("/authSuccess", function (req, res) {
+        if (req.session.githubUsername && req.session.accessToken) {
+            var githubUsername = req.session.githubUsername;
+            var accessToken = req.session.accessToken;
+            var redirectUrl = process.env.DASHBOARD_URI;
+            console.log("Auth success. Fetching events")
+            githubEvents.sendGithubEvents(githubUsername, accessToken)
+                .then(function (user) {
+                    console.log("Events fetched successfully.");
+                    while (io.in(githubUsername).sockets[0] && !io.in(githubUsername).sockets[0].connected) {
+                    }
+                    io.in(githubUsername).emit('status', {
+                        "status": "Synced up all events successfully!",
+                        "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
+                    });
+                }, function (user) {
+                    console.log("No new events to fetch")
+                    while (io.in(githubUsername).sockets[0] && !io.in(githubUsername).sockets[0].connected) {
+                    }
+                    io.in(githubUsername).emit('status', {
+                        "status": "No new events to fetch",
+                        "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
+                    });
                 });
-
-            }, function(user) {
-                console.log("No new events to fetch")
-                while(io.in(githubUsername).sockets[0] && !io.in(githubUsername).sockets[0].connected){//wait};
-                io.in(githubUsername).emit('status', {
-                    "status": "No new events to fetch",
-                    "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
-                });
-            });
-        res.redirect("/status?githubUsername=" + githubUsername);
-    } else {
-        res.redirect("/");
+            res.redirect("/status?githubUsername=" + githubUsername);
+        }
+        else {
+            res.redirect("/");
+        }
     }
-});
+)
+;
 
-app.get("/status", function(req, res) {
+app.get("/status", function (req, res) {
     res.render("status");
 });
