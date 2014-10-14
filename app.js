@@ -103,10 +103,18 @@ app.get("/authSuccess", function (req, res) {
                         counter = io.in(githubUsername).sockets.length;
                         console.log("Number of users in room: " + counter);
                         if (counter !== 0) {
-                            io.in(githubUsername).emit('status', {
-                                "status": "No new events to fetch",
-                                "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
-                            });
+                            if(user){
+                                io.in(githubUsername).emit('status', {
+                                    "status": "No new events to fetch",
+                                    "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
+                                });
+                            }
+                            else {
+                                io.in(githubUsername).emit('status', {
+                                    "status": "Events not sent to 1Self! Please try resyncing later",
+                                    "redirectUrl": redirectUrl
+                                });
+                            }
                             clearInterval(interval);
                         }
                     }, 2000);

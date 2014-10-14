@@ -32,12 +32,11 @@ module.exports = function () {
         };
         requestModule.post(options, function (error, response, body) {
             if (!error && response.statusCode == 200) {
-                deferred.resolve(body);
+                deferred.resolve(pushEvents);
             } else {
-                deferred.reject(error);
+                deferred.reject();
             }
         });
-        deferred.resolve(pushEvents);
         return deferred.promise;
     };
 };

@@ -91,6 +91,9 @@ module.exports = function (mongoRepository, qdService) {
         return qdService.sendBatchEvents(userInfo.pushEvents, userInfo.user.streamid, userInfo.user.writeToken)
             .then(function () {
                 return userInfo;
+            }, function(error) {
+                deferred.reject();
+                return deferred.promise;
             });
     };
 
