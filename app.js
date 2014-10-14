@@ -82,9 +82,9 @@ app.get("/authSuccess", function (req, res) {
                 .then(function (user) {
                     console.log("Events fetched successfully.");
                     var counter = io.in(githubUsername).sockets.length;
-                    while (counter < 1) {
+                   /* while (counter < 1) {
                         counter = io.in(githubUsername).sockets.length;
-                    }
+                    }*/
                     console.log("Number of users in room: " + counter);
                     io.in(githubUsername).emit('status', {
                         "status": "Synced up all events successfully!",
@@ -93,9 +93,9 @@ app.get("/authSuccess", function (req, res) {
                 }, function (user) {
                     console.log("No new events to fetch")
                     var counter = io.in(githubUsername).sockets.length;
-                    while (counter < 1) {
+                    /*while (counter < 1) {
                         counter = io.in(githubUsername).sockets.length;
-                    }
+                    }*/
                     console.log("Number of users in room: " + counter);
                     io.in(githubUsername).emit('status', {
                         "status": "No new events to fetch",
