@@ -68,6 +68,7 @@ module.exports = function (mongoRepository, qdService) {
                     "Software",
                     "Source Control"
                 ],
+                "dateTime": moment(event.created_at).format(),
                 "properties": {}
             };
 
