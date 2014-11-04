@@ -68,15 +68,10 @@ module.exports = function (mongoRepository, qdService) {
                     "Software",
                     "Source Control"
                 ],
-                "streamid": "",
                 "properties": {}
             };
 
             var qdEvent = clone(singleEventTemplate);
-            qdEvent.streamid = userInfo.user.streamid;
-            qdEvent.eventDateTime = {
-                "$date": moment(event.created_at).format()
-            };
             return qdEvent;
         };
         userInfo.pushEvents = _.map(userInfo.pushEvents, convertEventToQDFormat);
