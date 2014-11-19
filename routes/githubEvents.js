@@ -95,13 +95,13 @@ module.exports = function (mongoRepository, qdService) {
 
     var updateLastGithubSyncDate = function (userInfo) {
         var sortedPushEvents = _.chain(userInfo.pushEvents).sortBy(function (event) {
-            return event.eventDateTime["$date"];
+            return event.dateTime;
         }).reverse().value();
         var findQuery = {
             githubUsername: userInfo.user.githubUsername
         };
         var updateQuery = {
-            "lastGithubSyncDate": moment(sortedPushEvents[0].eventDateTime["$date"]).toDate()
+            "lastGithubSyncDate": moment(sortedPushEvents[0].dateTime).toDate()
         };
         return mongoRepository.update(findQuery, updateQuery)
             .then(function(){
