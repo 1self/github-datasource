@@ -72,6 +72,10 @@ app.get("/", function (req, res) {
     res.render('index');
 });
 
+app.get("/api/sync", function (req, res) {
+    res.render('index');
+});
+
 app.get("/authSuccess", function (req, res) {
         if (req.session.githubUsername && req.session.accessToken) {
             var githubUsername = req.session.githubUsername;

@@ -82,15 +82,14 @@ module.exports = function (mongoRepository, qdService) {
         var deferred = Q.defer();
         if (_.isEmpty(userInfo.pushEvents)) {
             deferred.reject(userInfo.user);
-            return deferred.promise;
         }
-        return qdService.sendBatchEvents(userInfo.pushEvents, userInfo.user.streamid, userInfo.user.writeToken)
+        qdService.sendBatchEvents(userInfo.pushEvents, userInfo.user.streamid, userInfo.user.writeToken)
             .then(function () {
-                return userInfo;
-            }, function(error) {
-                deferred.reject();
-                return deferred.promise;
+                deferred.resolve(userInfo);
+            }, function (error) {
+                deferred.reject(error);
             });
+        return deferred.promise;
     };
 
     var updateLastGithubSyncDate = function (userInfo) {
@@ -104,7 +103,7 @@ module.exports = function (mongoRepository, qdService) {
             "lastGithubSyncDate": moment(sortedPushEvents[0].dateTime).toDate()
         };
         return mongoRepository.update(findQuery, updateQuery)
-            .then(function(){
+            .then(function () {
                 return userInfo.user;
             });
     };

@@ -28,16 +28,11 @@ module.exports = function (app, mongoRepository, qdService) {
             };
             return mongoRepository.insert(document);
         };
-        var registerStreamForNewUser = function () {
-            return qdService.registerStream()
+        var registerStreamForNewUser = function (githubUsername) {
+            return qdService.registerStream(githubUsername)
                 .then(insertStreamInDb);
         };
-        mongoRepository.findByGithubUsername(githubUsername)
-            .then(function (user) {
-                if (_.isEmpty(user)) {
-                    return registerStreamForNewUser();
-                }
-            })
+        registerStreamForNewUser(githubUsername)
             .then(function () {
                 res.redirect("/authSuccess");
             })
