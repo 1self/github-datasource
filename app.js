@@ -81,7 +81,3 @@ app.post("/authSuccess", function (req, res) {
             });
     }
 );
-
-app.get("/status", function (req, res) {
-    res.render("status");
-});
