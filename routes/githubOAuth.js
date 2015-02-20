@@ -2,13 +2,12 @@ var request = require("request");
 var passport = require('passport');
 var githubStrategy = require('passport-github').Strategy;
 var _ = require('underscore');
-var moment = require('moment');
 
 var GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 var GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 var CONTEXT_URI = process.env.CONTEXT_URI;
 
-module.exports = function (app, mongoRepository, qdService) {
+module.exports = function (app, mongoRepository, oneselfService) {
 
     var handleGithubCallback = function (req, res) {
         var githubUser = req.user.profile;
@@ -16,29 +15,36 @@ module.exports = function (app, mongoRepository, qdService) {
         req.session.accessToken = req.user.accessToken;
         req.session.githubUsername = githubUsername;
         console.log("github User is : " + JSON.stringify(githubUser));
+        var callbackUrl = 'http://gitplugin.com:5001/authSuccess?username=' + githubUsername
+            + '&latestSyncField={{latestSyncField}}'
+            + '&streamid={{streamid}}';
 
-        var insertStreamInDb = function (streamDetails) {
-            console.log("StreamDetails: " + JSON.stringify(streamDetails));
-            var document = {
-                githubUsername: githubUsername,
-                streamid: streamDetails.streamid,
-                writeToken: streamDetails.writeToken,
-                readToken: streamDetails.readToken,
-                lastGithubSyncDate: moment.unix(0).toDate()
-            };
-            return mongoRepository.insert(document);
+        var document = {
+            githubUsername: githubUsername,
+            accessToken: req.user.accessToken
         };
-        var registerStreamForNewUser = function (githubUsername) {
-            return qdService.registerStream(githubUsername)
-                .then(insertStreamInDb);
-        };
-        registerStreamForNewUser(githubUsername)
-            .then(function () {
-                res.redirect("/authSuccess");
-            })
-            .catch(function (error) {
-                console.error("Error in github callback: ", error);
+        mongoRepository.insert(document).then(function () {
+            return oneselfService.registerStream(callbackUrl)
+        }).then(function (stream) {
+            var callbackUrlForUser = callbackUrl
+                .replace('{{streamid}}', stream.streamid)
+                .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
+            request({
+                method: 'POST',
+                uri: callbackUrlForUser,
+                gzip: true,
+                headers: {
+                    'Authorization': stream.writeToken
+                }
+            }, function (e, response, body) {
             });
+            var redirectUrl = process.env.DASHBOARD_URI;
+            res.redirect(redirectUrl + "?streamId=" + stream.streamid + "&readToken=" + stream.readToken);
+        }).catch(function (error) {
+            console.error("Error in github callback: ", error);
+        });
+
+
     };
 
     passport.serializeUser(function (user, done) {

@@ -4,15 +4,8 @@ var moment = require('moment');
 var Q = require('q');
 
 module.exports = function (mongoRepository, qdService) {
-    var fetchUserDetails = function (githubUsername, accessToken) {
-        return mongoRepository.findByGithubUsername(githubUsername)
-            .then(function (user) {
-                return {user: user, accessToken: accessToken};
-            })
-    };
     var getGithubPushEventsPerPage = function (page, userInfo) {
-        var githubUsername = userInfo.user.githubUsername;
-
+        var githubUsername = userInfo.githubUsername;
         var user_api_url = "/users/" + githubUsername;
         var client = github.client(userInfo.accessToken);
         client.get(user_api_url, {}, function (err, status, body, headers) {
@@ -30,7 +23,7 @@ module.exports = function (mongoRepository, qdService) {
         });
         return deferred.promise;
     };
-    var fetchGithubPushEvents = function (userInfo) {
+    var fetchGithubPushEvents = function (userInfo, streamInfo) {
         var deferred = Q.defer();
         var pages = _.range(1, 11);
         var promiseArray = _.map(pages, function (page) {
@@ -39,21 +32,18 @@ module.exports = function (mongoRepository, qdService) {
         Q.all(promiseArray)
             .then(_.flatten)
             .then(function (events) {
-                userInfo.pushEvents = events;
-                deferred.resolve(userInfo);
+                deferred.resolve(events);
             });
         return deferred.promise;
     };
-    var filterEventsToBeSent = function (userInfo) {
-        var lastGithubSyncDate = userInfo.user.lastGithubSyncDate;
+    var filterEventsToBeSent = function (events, lastSyncDate) {
         var eventsToBeSent = function (event) {
-            return moment(event.created_at).isAfter(lastGithubSyncDate);
+            return moment(event.created_at).isAfter(lastSyncDate);
         };
-        userInfo.pushEvents = _.filter(userInfo.pushEvents, eventsToBeSent);
-        return userInfo;
+        return _.filter(events, eventsToBeSent);
     };
-    var convertEventsToQDFormat = function (userInfo) {
-        var convertEventToQDFormat = function (event) {
+    var convertEventsTo1SelfFormat = function (filteredEvents) {
+        var convertEventTo1SelfFormat = function (event) {
             var clone = function (obj) {
                 return JSON.parse(JSON.stringify(obj));
             };
@@ -68,52 +58,68 @@ module.exports = function (mongoRepository, qdService) {
                     "Software",
                     "Source Control"
                 ],
-                "dateTime": moment(event.created_at).format(),
+                "dateTime": moment(event.created_at).toISOString(),
+                "latestSyncField": {
+                    "$date": moment(event.created_at).toISOString()
+                },
                 "properties": {}
             };
-
-            var qdEvent = clone(singleEventTemplate);
-            return qdEvent;
+            return clone(singleEventTemplate);
         };
-        userInfo.pushEvents = _.map(userInfo.pushEvents, convertEventToQDFormat);
-        return userInfo;
+
+        return _.map(filteredEvents, convertEventTo1SelfFormat);
     };
-    var sendEventsToQD = function (userInfo) {
+    var sendEventsToQD = function (events, streamInfo) {
         var deferred = Q.defer();
-        if (_.isEmpty(userInfo.pushEvents)) {
-            deferred.reject(userInfo.user);
+        if (_.isEmpty(events)) {
+            deferred.resolve();
         }
-        qdService.sendBatchEvents(userInfo.pushEvents, userInfo.user.streamid, userInfo.user.writeToken)
+        qdService.sendBatchEvents(events, streamInfo)
             .then(function () {
-                deferred.resolve(userInfo);
+                console.log("Events sent to 1self!!!");
+                deferred.resolve();
             }, function (error) {
                 deferred.reject(error);
             });
         return deferred.promise;
     };
-
-    var updateLastGithubSyncDate = function (userInfo) {
-        var sortedPushEvents = _.chain(userInfo.pushEvents).sortBy(function (event) {
-            return event.dateTime;
-        }).reverse().value();
-        var findQuery = {
-            githubUsername: userInfo.user.githubUsername
+    var createSyncStartEvent = function () {
+        return {
+            "dateTime": moment().toISOString(),
+            "objectTags": ["sync"],
+            "actionTags": ["start"],
+            "properties": {
+                "source": "GitHub"
+            }
         };
-        var updateQuery = {
-            "lastGithubSyncDate": moment(sortedPushEvents[0].dateTime).toDate()
+    };
+    var createSyncCompleteEvent = function () {
+        return {
+            "dateTime": moment().toISOString(),
+            "objectTags": ["sync"],
+            "actionTags": ["complete"],
+            "properties": {
+                "source": "GitHub"
+            }
         };
-        return mongoRepository.update(findQuery, updateQuery)
-            .then(function () {
-                return userInfo.user;
-            });
     };
 
-    this.sendGithubEvents = function (githubUsername, accessToken) {
-        return fetchUserDetails(githubUsername, accessToken)
-            .then(fetchGithubPushEvents)
-            .then(filterEventsToBeSent)
-            .then(convertEventsToQDFormat)
-            .then(sendEventsToQD)
-            .then(updateLastGithubSyncDate);
+    this.sendGithubEvents = function (userInfo, streamInfo) {
+        var syncStartEvent = createSyncStartEvent();
+        qdService.sendEvent(syncStartEvent, streamInfo)
+            .then(function () {
+                return fetchGithubPushEvents(userInfo, streamInfo)
+            })
+            .then(function (events) {
+                return filterEventsToBeSent(events, streamInfo.lastSyncDate);
+            })
+            .then(convertEventsTo1SelfFormat)
+            .then(function (eventsToBeSent) {
+                return sendEventsToQD(eventsToBeSent, streamInfo);
+            })
+            .then(function () {
+                var syncCompleteEvent = createSyncCompleteEvent();
+                return qdService.sendEvent(syncCompleteEvent, streamInfo);
+            });
     };
 };

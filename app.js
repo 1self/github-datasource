@@ -41,15 +41,6 @@ var server = app.listen(port, function () {
     console.log("Listening on " + port);
 });
 
-var io = require('socket.io')(server);
-io.on('connection', function (socket) {
-    console.log("client connected..............");
-    socket.on('clientConnected', function (githubUsername) {
-        console.log("new client logged in." + githubUsername);
-        socket.join(githubUsername);
-    });
-});
-
 var qdService = new QdService();
 var mongoUri = process.env.DBURI;
 var mongoRepository;
@@ -72,66 +63,24 @@ app.get("/", function (req, res) {
     res.render('index');
 });
 
-app.get("/api/sync", function (req, res) {
-    res.render('index');
-});
 
-app.get("/authSuccess", function (req, res) {
-        if (req.session.githubUsername && req.session.accessToken) {
-            var githubUsername = req.session.githubUsername;
-            var accessToken = req.session.accessToken;
-            var redirectUrl = process.env.DASHBOARD_URI;
-            console.log("Auth success. Fetching events");
-            githubEvents.sendGithubEvents(githubUsername, accessToken)
-                .then(function (user) {
-                    console.log("Events fetched successfully.");
-                    var counter;
-                    //Checking number of people in the room to resolve prod issue where heroku is executing synchronously
-                    var interval = setInterval(function () {
-                        counter = io.in(githubUsername).sockets.length;
-                        console.log("Number of users in room: " + counter);
-                        if (counter !== 0) {
-                            io.in(githubUsername).emit('status', {
-                                "status": "Synced up all events successfully!",
-                                "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
-                            });
-                            clearInterval(interval);
-                        }
-                    }, 2000);
-
-                }, function (user) {
-                    console.log("No new events to fetch");
-                    var counter;
-                    //Checking number of people in the room to resolve prod issue where heroku is executing synchronously
-                    var interval = setInterval(function () {
-                        counter = io.in(githubUsername).sockets.length;
-                        console.log("Number of users in room: " + counter);
-                        if (counter !== 0) {
-                            if(user){
-                                io.in(githubUsername).emit('status', {
-                                    "status": "No new events to fetch",
-                                    "redirectUrl": redirectUrl + "?streamId=" + user.streamid + "&readToken=" + user.readToken
-                                });
-                            }
-                            else {
-                                io.in(githubUsername).emit('status', {
-                                    "status": "Events not sent to 1Self! Please try resyncing later",
-                                    "redirectUrl": redirectUrl
-                                });
-                            }
-                            clearInterval(interval);
-                        }
-                    }, 2000);
-
-                });
-            res.redirect("/status?githubUsername=" + githubUsername);
-        }
-        else {
-            res.redirect("/");
-        }
+app.post("/authSuccess", function (req, res) {
+        var githubUsername = req.query.username;
+        var streamInfo = {
+            streamid: req.query.streamid,
+            writeToken: req.headers.authorization,
+            lastSyncDate: req.query.latestSyncField
+        };
+        mongoRepository.findByGithubUsername(githubUsername)
+            .then(function (user) {
+                var userInfo = {
+                    githubUsername: githubUsername,
+                    accessToken: user.accessToken
+                };
+                return githubEvents.sendGithubEvents(userInfo, streamInfo);
+            });
     }
-)
-;
+);
 
 app.get("/status", function (req, res) {
     res.render("status");

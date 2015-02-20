@@ -6,13 +6,9 @@ module.exports = function () {
     var appSecret = process.env.APP_SECRET;
     var oneselfUri = process.env.ONESELF_URI;
 
-    this.registerStream = function (githubUsername) {
+    this.registerStream = function (callbackUrl) {
         var deferred = Q.defer();
         console.log("Registering stream...");
-        var callbackUrl = 'http://gitplugin.com:5001/api/sync?username='
-            + githubUsername
-            + '&latestSyncField={{latestSyncField}}'
-            + '&streamid={{streamid}}';
 
         var options = {
             method: 'POST',
@@ -38,18 +34,18 @@ module.exports = function () {
         return deferred.promise;
     };
 
-    this.sendBatchEvents = function (pushEvents, streamid, writeToken) {
+    this.sendBatchEvents = function (events, streamInfo) {
         var deferred = Q.defer();
         var options = {
             method: 'POST',
-            uri: oneselfUri + '/v1/streams/' + streamid + '/events/batch',
+            uri: oneselfUri + '/v1/streams/' + streamInfo.streamid + '/events/batch',
             gzip: true,
             headers: {
-                'Authorization': writeToken,
+                'Authorization': streamInfo.writeToken,
                 'Content-type': 'application/json'
             },
             json: true,
-            body: pushEvents
+            body: events
         };
         requestModule(options, function (err, response, body) {
             if (err) {
@@ -58,7 +54,32 @@ module.exports = function () {
             if (response.statusCode === 404) {
                 deferred.reject("Stream Not Found!")
             }
-            deferred.resolve(pushEvents);
+            deferred.resolve();
+        });
+        return deferred.promise;
+    };
+
+    this.sendEvent = function (event, streamInfo) {
+        var deferred = Q.defer();
+        var options = {
+            method: 'POST',
+            uri: oneselfUri + '/v1/streams/' + streamInfo.streamid + '/events',
+            gzip: true,
+            headers: {
+                'Authorization': streamInfo.writeToken,
+                'Content-type': 'application/json'
+            },
+            json: true,
+            body: event
+        };
+        requestModule(options, function (err, response, body) {
+            if (err) {
+                deferred.reject(err);
+            }
+            if (response.statusCode === 404) {
+                deferred.reject("Stream Not Found!")
+            }
+            deferred.resolve();
         });
         return deferred.promise;
     };
