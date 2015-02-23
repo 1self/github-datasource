@@ -60,9 +60,20 @@ mongoClient.connect(mongoUri, function (err, databaseConnection) {
 });
 
 app.get("/", function (req, res) {
-    res.render('index');
+    var registrationToken = req.query.token;
+    var redirectUrl = process.env.DASHBOARD_URI;
+    if (registrationToken === undefined) {
+        res.redirect(redirectUrl);
+    }
+    else {
+        qdService.validateUser(registrationToken)
+            .then(function () {
+                res.render('index');
+            }, function(){
+                res.redirect(redirectUrl);
+            })
+    }
 });
-
 
 app.post("/authSuccess", function (req, res) {
         var githubUsername = req.query.username;
