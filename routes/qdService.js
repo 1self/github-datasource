@@ -88,27 +88,4 @@ module.exports = function () {
         });
         return deferred.promise;
     };
-
-    this.validateUser = function (username, token) {
-        var deferred = Q.defer();
-        var options = {
-            method: 'GET',
-            uri: oneselfUri + '/v1/validate/user?username=' + username,
-            headers: {
-                'Authorization': token
-            },
-            json: true
-        };
-        requestModule(options, function (e, response, body) {
-            if (response.statusCode === 401) {
-                deferred.reject('Token incorrect', null);
-                return;
-            }
-            if (e || response.statusCode === 500) {
-                deferred.reject("Error: ", e);
-            }
-            deferred.resolve(true);
-        });
-        return deferred.promise;
-    };
 };
