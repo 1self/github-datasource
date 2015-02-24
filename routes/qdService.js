@@ -6,15 +6,16 @@ module.exports = function () {
     var appSecret = process.env.APP_SECRET;
     var oneselfUri = process.env.ONESELF_URI;
 
-    this.registerStream = function (callbackUrl) {
+    this.registerStream = function (oneselfUsername, token, callbackUrl) {
         var deferred = Q.defer();
         console.log("Registering stream...");
 
         var options = {
             method: 'POST',
-            uri: oneselfUri + '/v1/streams',
+            uri: oneselfUri + '/v1/users/' + oneselfUsername + '/streams',
             headers: {
-                'Authorization': appId + ':' + appSecret
+                'Authorization': appId + ':' + appSecret,
+                'registration-token': token
             },
             json: true,
             body: {
@@ -24,6 +25,10 @@ module.exports = function () {
         requestModule(options, function (e, response, body) {
             if (response.statusCode === 401) {
                 deferred.reject('auth error: check your appId and appSecret', null);
+                return;
+            }
+            if (response.statusCode === 400) {
+                deferred.reject('Invalid username and registrationToken', null);
                 return;
             }
             if (e) {
@@ -84,11 +89,11 @@ module.exports = function () {
         return deferred.promise;
     };
 
-    this.validateUser = function (token) {
+    this.validateUser = function (username, token) {
         var deferred = Q.defer();
         var options = {
             method: 'GET',
-            uri: oneselfUri + '/v1/validate/user',
+            uri: oneselfUri + '/v1/validate/user?username=' + username,
             headers: {
                 'Authorization': token
             },

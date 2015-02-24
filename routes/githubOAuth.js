@@ -14,6 +14,8 @@ module.exports = function (app, mongoRepository, oneselfService) {
         var githubUsername = githubUser.username;
         req.session.accessToken = req.user.accessToken;
         req.session.githubUsername = githubUsername;
+        var oneselfUsername = req.session.oneselfUsername;
+        var registrationToken = req.session.registrationToken;
         console.log("github User is : " + JSON.stringify(githubUser));
         var callbackUrl = 'http://gitplugin.com:5001/authSuccess?username=' + githubUsername
             + '&latestSyncField={{latestSyncField}}'
@@ -23,28 +25,35 @@ module.exports = function (app, mongoRepository, oneselfService) {
             githubUsername: githubUsername,
             accessToken: req.user.accessToken
         };
-        mongoRepository.insert(document).then(function () {
-            return oneselfService.registerStream(callbackUrl)
-        }).then(function (stream) {
-            var callbackUrlForUser = callbackUrl
-                .replace('{{streamid}}', stream.streamid)
-                .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
+
+        var syncGithubEvents = function (callbackUrl, writeToken) {
             request({
                 method: 'POST',
-                uri: callbackUrlForUser,
+                uri: callbackUrl,
                 gzip: true,
                 headers: {
-                    'Authorization': stream.writeToken
+                    'Authorization': writeToken
                 }
             }, function (e, response, body) {
             });
-            var redirectUrl = process.env.DASHBOARD_URI;
-            res.redirect(redirectUrl + "?streamId=" + stream.streamid + "&readToken=" + stream.readToken);
-        }).catch(function (error) {
-            console.error("Error in github callback: ", error);
-        });
+        };
 
-
+        oneselfService.registerStream(oneselfUsername, registrationToken, callbackUrl)
+            .then(function (stream) {
+                mongoRepository.insert(document);
+                var callbackUrlForUser = callbackUrl
+                    .replace('{{streamid}}', stream.streamid)
+                    .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
+                syncGithubEvents(callbackUrlForUser, stream.writeToken);
+                var redirectUrl = process.env.DASHBOARD_URI;
+                res.redirect(redirectUrl + "?streamId=" + stream.streamid + "&readToken=" + stream.readToken);
+            }, function (error) {
+                res.render('error', {
+                    error: error
+                });
+            }).catch(function (error) {
+                console.error("Error in github callback: ", error);
+            });
     };
 
     passport.serializeUser(function (user, done) {
