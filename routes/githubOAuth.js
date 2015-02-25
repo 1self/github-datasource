@@ -45,8 +45,8 @@ module.exports = function (app, mongoRepository, oneselfService) {
                     .replace('{{streamid}}', stream.streamid)
                     .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
                 syncGithubEvents(callbackUrlForUser, stream.writeToken);
-                var redirectUrl = process.env.DASHBOARD_URI;
-                res.redirect(redirectUrl + "?streamId=" + stream.streamid + "&readToken=" + stream.readToken);
+                var redirectUrl = process.env.INTEGRATIONS_URI;
+                res.redirect(redirectUrl);
             }, function (error) {
                 res.render('error', {
                     error: error
