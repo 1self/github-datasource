@@ -17,7 +17,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
         var oneselfUsername = req.session.oneselfUsername;
         var registrationToken = req.session.registrationToken;
         console.log("github User is : " + JSON.stringify(githubUser));
-        var callbackUrl = 'http://gitplugin.com:5001/authSuccess?username=' + githubUsername
+        var callbackUrl = CONTEXT_URI + '/authSuccess?username=' + githubUsername
             + '&latestSyncField={{latestSyncField}}'
             + '&streamid={{streamid}}';
 
