@@ -40,18 +40,21 @@ module.exports = function (app, mongoRepository, oneselfService) {
 
         oneselfService.registerStream(oneselfUsername, registrationToken, callbackUrl)
             .then(function (stream) {
-                mongoRepository.insert(document);
-                var callbackUrlForUser = callbackUrl
-                    .replace('{{streamid}}', stream.streamid)
-                    .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
-                syncGithubEvents(callbackUrlForUser, stream.writeToken);
-                var redirectUrl = process.env.INTEGRATIONS_URI;
-                res.redirect(redirectUrl);
-            }, function (error) {
-                res.render('error', {
-                    error: error
-                });
-            }).catch(function (error) {
+                mongoRepository.insert(document)
+                    .then(function () {
+                        var callbackUrlForUser = callbackUrl
+                            .replace('{{streamid}}', stream.streamid)
+                            .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
+                        syncGithubEvents(callbackUrlForUser, stream.writeToken);
+                        var redirectUrl = process.env.INTEGRATIONS_URI;
+                        res.redirect(redirectUrl);
+                    }, function (error) {
+                        res.render('error', {
+                            error: error
+                        });
+                    });
+            })
+            .catch(function (error) {
                 console.error("Error in github callback: ", error);
             });
     };
