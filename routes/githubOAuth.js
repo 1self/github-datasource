@@ -48,11 +48,11 @@ module.exports = function (app, mongoRepository, oneselfService) {
                         syncGithubEvents(callbackUrlForUser, stream.writeToken);
                         var redirectUrl = process.env.INTEGRATIONS_URI;
                         res.redirect(redirectUrl);
-                    }, function (error) {
-                        res.render('error', {
-                            error: error
-                        });
-                    });
+                    })
+            }, function (error) {
+                res.render('error', {
+                    error: error
+                });
             })
             .catch(function (error) {
                 console.error("Error in github callback: ", error);
