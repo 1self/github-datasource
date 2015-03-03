@@ -37,22 +37,55 @@ module.exports = function (app, mongoRepository, oneselfService) {
             }, function (e, response, body) {
             });
         };
+        mongoRepository.findByGithubUsername(githubUsername)
+            .then(function (user) {
+                if (user && user.streamid) {
+                    var callbackUrlForUser = callbackUrl
+                        .replace('{{streamid}}', user.streamid)
+                        .replace('{{latestSyncField}}', user.lastGithubSyncDate.toISOString());
 
-        oneselfService.registerStream(oneselfUsername, registrationToken, callbackUrl)
-            .then(function (stream) {
-                mongoRepository.insert(document)
-                    .then(function () {
-                        var callbackUrlForUser = callbackUrl
-                            .replace('{{streamid}}', stream.streamid)
-                            .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
-                        syncGithubEvents(callbackUrlForUser, stream.writeToken);
-                        var redirectUrl = process.env.INTEGRATIONS_URI;
-                        res.redirect(redirectUrl);
-                    })
-            }, function (error) {
-                res.render('error', {
-                    error: error
-                });
+                    syncGithubEvents(callbackUrlForUser, user.writeToken);
+                    oneselfService.link(oneselfUsername, user.streamid)
+                        .then(function () {
+                            var findQuery = {
+                                'githubUsername': githubUsername
+                            };
+                            var updateQuery = {
+                                "$set": {
+                                    "accessToken": req.user.accessToken
+                                },
+                                "$unset": {
+                                    "streamid": 1,
+                                    "readToken": 1,
+                                    "writeToken": 1,
+                                    "lastGithubSyncDate": 1
+                                }
+                            };
+                            return mongoRepository.update(findQuery, updateQuery)
+                        })
+                        .then(function () {
+                            var redirectUrl = process.env.INTEGRATIONS_URI;
+                            res.redirect(redirectUrl);
+                        });
+                }
+                else {
+                    oneselfService.registerStream(oneselfUsername, registrationToken, callbackUrl)
+                        .then(function (stream) {
+                            mongoRepository.insert(document)
+                                .then(function () {
+                                    var callbackUrlForUser = callbackUrl
+                                        .replace('{{streamid}}', stream.streamid)
+                                        .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
+                                    syncGithubEvents(callbackUrlForUser, stream.writeToken);
+                                    var redirectUrl = process.env.INTEGRATIONS_URI;
+                                    res.redirect(redirectUrl);
+                                })
+                        }, function (error) {
+                            res.render('error', {
+                                error: error
+                            });
+                        })
+                }
             })
             .catch(function (error) {
                 console.error("Error in github callback: ", error);

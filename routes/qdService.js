@@ -88,4 +88,30 @@ module.exports = function () {
         });
         return deferred.promise;
     };
+    this.link = function(oneselfUsername, streamId) {
+        var deferred = Q.defer();
+        var options = {
+            method: 'POST',
+            uri: oneselfUri + '/v1/users/' + oneselfUsername + '/link',
+            gzip: true,
+            headers: {
+                'Content-type': 'application/json'
+            },
+            json: true,
+            body: {
+                "streamId": streamId,
+                "appId" : appId
+            }
+        };
+        requestModule(options, function (err, response, body) {
+            if (err) {
+                deferred.reject(err);
+            }
+            if (response.statusCode === 400) {
+                deferred.reject("Invalid streamId and appId")
+            }
+            deferred.resolve();
+        });
+        return deferred.promise;
+    }
 };

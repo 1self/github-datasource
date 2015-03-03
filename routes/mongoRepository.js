@@ -38,11 +38,7 @@ module.exports = function (mongoConnection) {
     this.update = function (findQuery, updateQuery) {
         var deferred = Q.defer();
         mongoConnection.collection('users', function (err, collection) {
-            collection.update(findQuery, {
-                $set: updateQuery
-            }, {
-                upsert: true
-            }, function (error, data) {
+            collection.update(findQuery, updateQuery, function (error, data) {
                 if (error) {
                     deferred.reject(error);
                 } else {
