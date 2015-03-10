@@ -65,7 +65,7 @@ app.get("/", function (req, res) {
     res.render('index');
 });
 
-app.post("/authSuccess", function (req, res) {
+app.get("/authSuccess", function (req, res) {
         var githubUsername = req.query.username;
         var streamInfo = {
             streamid: req.query.streamid,

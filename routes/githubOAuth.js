@@ -28,13 +28,14 @@ module.exports = function (app, mongoRepository, oneselfService) {
 
         var syncGithubEvents = function (callbackUrl, writeToken) {
             request({
-                method: 'POST',
+                method: 'GET',
                 uri: callbackUrl,
                 gzip: true,
                 headers: {
                     'Authorization': writeToken
                 }
             }, function (e, response, body) {
+                console.log("Synced github Events!!!");
             });
         };
         mongoRepository.findByGithubUsername(githubUsername)
@@ -43,7 +44,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
                     var callbackUrlForUser = callbackUrl
                         .replace('{{streamid}}', user.streamid)
                         .replace('{{latestSyncField}}', user.lastGithubSyncDate.toISOString());
-
+                    console.log("Syncing github events");
                     syncGithubEvents(callbackUrlForUser, user.writeToken);
                     oneselfService.link(oneselfUsername, user.streamid)
                         .then(function () {
