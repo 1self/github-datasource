@@ -80,5 +80,6 @@ app.get("/authSuccess", function (req, res) {
                 };
                 return githubEvents.sendGithubEvents(userInfo, streamInfo);
             });
+        res.status(200).send("ok");
     }
 );
