@@ -86,7 +86,7 @@ module.exports = function (mongoRepository, qdService) {
     var createSyncStartEvent = function () {
         return {
             "dateTime": moment().toISOString(),
-            "objectTags": ["sync"],
+            "objectTags": ["1self integration sync"],
             "actionTags": ["start"],
             "properties": {
                 "source": "GitHub"
@@ -96,7 +96,7 @@ module.exports = function (mongoRepository, qdService) {
     var createSyncCompleteEvent = function () {
         return {
             "dateTime": moment().toISOString(),
-            "objectTags": ["sync"],
+            "objectTags": ["1self integration sync"],
             "actionTags": ["complete"],
             "properties": {
                 "source": "GitHub"
