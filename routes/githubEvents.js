@@ -175,6 +175,7 @@ module.exports = function (mongoRepository, qdService) {
                     deferred.resolve(commit);
                 }
                 else {
+                    console.log("Error occurred :: getCommitPromise", err);
                     deferred.reject(err);
                 }
             });
