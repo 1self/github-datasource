@@ -1,6 +1,7 @@
 var _ = require("underscore");
 var github = require('octonode');
 var moment = require('moment');
+var request = require('request');
 var Q = require('q');
 
 module.exports = function (mongoRepository, qdService) {
@@ -42,33 +43,76 @@ module.exports = function (mongoRepository, qdService) {
         };
         return _.filter(events, eventsToBeSent);
     };
+
     var convertEventsTo1SelfFormat = function (filteredEvents) {
         var convertEventTo1SelfFormat = function (event) {
             var clone = function (obj) {
                 return JSON.parse(JSON.stringify(obj));
             };
-            var singleEventTemplate = {
-                "actionTags": [
-                    "Github",
-                    "Push"
-                ],
-                "source": "GitHub",
-                "objectTags": [
-                    "Computer",
-                    "Software",
-                    "Source Control"
-                ],
-                "dateTime": moment(event.created_at).toISOString(),
-                "latestSyncField": {
-                    "$date": moment(event.created_at).toISOString()
-                },
-                "properties": {}
-            };
+            if (event.type == "PushEvent") {
+                var singleEventTemplate = {
+                    "actionTags": [
+                        "Github",
+                        "Push"
+                    ],
+                    "source": "GitHub",
+                    "objectTags": [
+                        "Computer",
+                        "Software",
+                        "Source Control"
+                    ],
+                    "dateTime": moment(event.created_at).toISOString(),
+                    "latestSyncField": {
+                        "$date": moment(event.created_at).toISOString()
+                    },
+                    "properties": {
+                        "pushId": event.payload["push_id"],
+                        "commitIds": _.map(event.payload.commits, function (c) {
+                            return c['sha']
+                        })
+                    }
+                };
+            } else if (event.commit != undefined) {
+                var singleEventTemplate = {
+                    "actionTags": [
+                        "commit"
+                    ],
+                    "source": "GitHub",
+                    "objectTags": [
+                        "git",
+                        "github",
+                        "computer",
+                        "software",
+                        "source control"
+                    ],
+                    "dateTime": moment(event.created_at).toISOString(),
+                    "latestSyncField": {
+                        "$date": moment(event.created_at).toISOString()
+                    },
+                    "properties": {
+                        "pushId": event.pushId,
+                        "sha": event.sha,
+                        "author-name": event.commit.author.name,
+                        "author-email": event.commit.author.email,
+                        "author-date": event.commit.author.date,
+                        "message": event.commit.message,
+                        "url": event.commit.url,
+                        "line-changes": event.stats.total,
+                        "line-additions": event.stats.additions,
+                        "line-deletions": event.stats.deletions
+                        //"file-changes": event.files.changes,
+                        //"file-additions": event.files.additions,
+                        //"file-deletions": event.files.deletions
+                    }
+                };
+            } else {
+                console.log("ERROR commit ---->", JSON.stringify(event))
+            }
             return clone(singleEventTemplate);
         };
-
         return _.map(filteredEvents, convertEventTo1SelfFormat);
     };
+
     var sendEventsToQD = function (events, streamInfo) {
         var deferred = Q.defer();
         if (_.isEmpty(events)) {
@@ -104,8 +148,60 @@ module.exports = function (mongoRepository, qdService) {
         };
     };
 
+    var getGithubCommitEvents = function (filteredEvents) {
+        var deferred = Q.defer();
+
+        var commitObjects = [];
+        _.each(filteredEvents, function (event) {
+            _.each(event.payload.commits, function (commit) {
+                commitObjects.push({url: commit['url'], pushId: event.payload["push_id"]})
+            })
+        });
+
+        var getCommitPromise = function (commitObject) {
+            var deferred = Q.defer();
+            console.log("Hitting request")
+
+            var options = {
+                url: commitObject.url,
+                headers: {
+                    "User-Agent": "1self"
+                }
+            };
+            request(options, function (err, res, body) {
+                if (!err) {
+                    var commit = JSON.parse(body);
+                    commit.pushId = commitObject.pushId
+                    deferred.resolve(commit);
+                }
+                else {
+                    deferred.reject(err);
+                }
+            });
+            return deferred.promise;
+        };
+
+        var promiseArray = [];
+
+        //commitObjects = commitObjects.slice(0, 3);
+
+        _.map(commitObjects, function (commitObject) {
+            promiseArray.push(getCommitPromise(commitObject))
+        });
+
+        Q.all(promiseArray).then(function (commitEvents) {
+            var events = filteredEvents.concat(commitEvents)
+            deferred.resolve(events);
+        }).catch(function (error) {
+            console.log("Error occurred", error);
+        });
+
+        return deferred.promise;
+    };
+
     this.sendGithubEvents = function (userInfo, streamInfo) {
         var syncStartEvent = createSyncStartEvent();
+
         qdService.sendEvent(syncStartEvent, streamInfo)
             .then(function () {
                 return fetchGithubPushEvents(userInfo, streamInfo)
@@ -113,6 +209,7 @@ module.exports = function (mongoRepository, qdService) {
             .then(function (events) {
                 return filterEventsToBeSent(events, streamInfo.lastSyncDate);
             })
+            .then(getGithubCommitEvents)
             .then(convertEventsTo1SelfFormat)
             .then(function (eventsToBeSent) {
                 return sendEventsToQD(eventsToBeSent, streamInfo);
@@ -120,6 +217,9 @@ module.exports = function (mongoRepository, qdService) {
             .then(function () {
                 var syncCompleteEvent = createSyncCompleteEvent();
                 return qdService.sendEvent(syncCompleteEvent, streamInfo);
+            }).catch(function (error) {
+                console.error("Error occurred", error)
             });
     };
-};
+}
+;
