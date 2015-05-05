@@ -4,7 +4,7 @@ var Q = require('q');
 module.exports = function () {
     var appId = process.env.APP_ID;
     var appSecret = process.env.APP_SECRET;
-    var oneselfUri = process.env.ONESELF_URI;
+    var oneselfUri = process.env.CONTEXT_URI;
 
     this.registerStream = function (oneselfUsername, token, callbackUrl) {
         var deferred = Q.defer();

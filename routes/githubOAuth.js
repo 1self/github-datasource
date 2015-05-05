@@ -1,4 +1,4 @@
-var request = require("request");
+Cvar request = require("request");
 var passport = require('passport');
 var githubStrategy = require('passport-github').Strategy;
 var _ = require('underscore');
@@ -6,6 +6,8 @@ var _ = require('underscore');
 var GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 var GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 var CONTEXT_URI = process.env.CONTEXT_URI;
+
+var REDIRECT_URL = process.env.CONTEXT_URI + '/integrations';
 
 module.exports = function (app, mongoRepository, oneselfService) {
 
@@ -65,8 +67,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
                             return mongoRepository.update(findQuery, updateQuery)
                         })
                         .then(function () {
-                            var redirectUrl = process.env.INTEGRATIONS_URI;
-                            res.redirect(redirectUrl);
+                            res.redirect(REDIRECT_URL);
                         });
                 }
                 else {
@@ -78,8 +79,8 @@ module.exports = function (app, mongoRepository, oneselfService) {
                                         .replace('{{streamid}}', stream.streamid)
                                         .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
                                     syncGithubEvents(callbackUrlForUser, stream.writeToken);
-                                    var redirectUrl = process.env.INTEGRATIONS_URI;
-                                    res.redirect(redirectUrl);
+                                    
+                                    res.redirect(REDIRECT_URL);
                                 })
                         }, function (error) {
                             res.render('error', {
