@@ -132,8 +132,8 @@ module.exports = function (mongoRepository, qdService) {
             "dateTime": moment().toISOString(),
             "objectTags": ["1self integration sync"],
             "actionTags": ["start"],
+            "source": "1self-GitHub",
             "properties": {
-                "source": "GitHub"
             }
         };
     };
@@ -142,8 +142,8 @@ module.exports = function (mongoRepository, qdService) {
             "dateTime": moment().toISOString(),
             "objectTags": ["1self integration sync"],
             "actionTags": ["complete"],
+            "source": "1self-GitHub",
             "properties": {
-                "source": "GitHub"
             }
         };
     };
