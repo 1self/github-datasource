@@ -87,9 +87,9 @@ module.exports = function (mongoRepository, qdService) {
                         "software",
                         "source control"
                     ],
-                    "dateTime": moment(event.created_at).toISOString(),
+                    "dateTime": moment(event.commit.author.date).toISOString(),
                     "latestSyncField": {
-                        "$date": moment(event.created_at).toISOString()
+                        "$date": moment(event.commit.author.date).toISOString()
                     },
                     "properties": {
                         "pushId": event.pushId,
