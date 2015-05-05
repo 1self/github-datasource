@@ -24,7 +24,7 @@ module.exports = function (mongoRepository, qdService) {
         });
         return deferred.promise;
     };
-    var fetchGithubPushEvents = function (userInfo, streamInfo) {
+    var fetchGithubPushEvents = function (userInfo) {
         var deferred = Q.defer();
         var pages = _.range(1, 11);
         var promiseArray = _.map(pages, function (page) {
@@ -148,7 +148,7 @@ module.exports = function (mongoRepository, qdService) {
         };
     };
 
-    var getGithubCommitEvents = function (filteredEvents) {
+    var getGithubCommitEvents = function (filteredEvents, userInfo) {
         var deferred = Q.defer();
 
         var commitObjects = [];
@@ -163,11 +163,12 @@ module.exports = function (mongoRepository, qdService) {
             console.log("Hitting request")
 
             var options = {
-                url: commitObject.url,
+                url: commitObject.url + "?access_token=" + userInfo.accessToken,
                 headers: {
                     "User-Agent": "1self"
                 }
             };
+
             request(options, function (err, res, body) {
                 if (!err) {
                     var commit = JSON.parse(body);
@@ -205,13 +206,14 @@ module.exports = function (mongoRepository, qdService) {
 
         qdService.sendEvent(syncStartEvent, streamInfo)
             .then(function () {
-                return fetchGithubPushEvents(userInfo, streamInfo)
+                return fetchGithubPushEvents(userInfo)
             })
             .then(function (events) {
                 return filterEventsToBeSent(events, streamInfo.lastSyncDate);
             })
-            .then(getGithubCommitEvents)
-            .then(convertEventsTo1SelfFormat)
+            .then(function(){
+                getGithubCommitEvents(userInfo)
+            }).then(convertEventsTo1SelfFormat)
             .then(function (eventsToBeSent) {
                 return sendEventsToQD(eventsToBeSent, streamInfo);
             })
