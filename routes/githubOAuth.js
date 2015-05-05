@@ -5,9 +5,8 @@ var _ = require('underscore');
 
 var GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 var GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-var CONTEXT_URI = process.env.CONTEXT_URI;
-
-var REDIRECT_URL = process.env.CONTEXT_URI + '/integrations';
+var GITHUB_INT_CONTEXT_URI = process.env.GITHUB_INT_CONTEXT_URI;
+var INTEGRATIONS_URL = process.env.CONTEXT_URI + '/integrations';
 
 module.exports = function (app, mongoRepository, oneselfService) {
 
@@ -19,7 +18,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
         var oneselfUsername = req.session.oneselfUsername;
         var registrationToken = req.session.registrationToken;
         console.log("github User is : " + JSON.stringify(githubUser));
-        var callbackUrl = CONTEXT_URI + '/authSuccess?username=' + githubUsername
+        var callbackUrl = GITHUB_INT_CONTEXT_URI + '/authSuccess?username=' + githubUsername
             + '&latestSyncField={{latestSyncField}}'
             + '&streamid={{streamid}}';
 
@@ -67,7 +66,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
                             return mongoRepository.update(findQuery, updateQuery)
                         })
                         .then(function () {
-                            res.redirect(REDIRECT_URL);
+                            res.redirect(INTEGRATIONS_URL);
                         });
                 }
                 else {
@@ -80,7 +79,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
                                         .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
                                     syncGithubEvents(callbackUrlForUser, stream.writeToken);
                                     
-                                    res.redirect(REDIRECT_URL);
+                                    res.redirect(INTEGRATIONS_URL);
                                 })
                         }, function (error) {
                             res.render('error', {
@@ -105,7 +104,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
     passport.use(new githubStrategy({
             clientID: GITHUB_CLIENT_ID,
             clientSecret: GITHUB_CLIENT_SECRET,
-            callbackURL: CONTEXT_URI + "/auth/github/callback"
+            callbackURL: GITHUB_INT_CONTEXT_URI + "/auth/github/callback"
         },
         function (accessToken, refreshToken, profile, done) {
             var githubProfile = {
@@ -123,7 +122,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
     }));
 
     app.get('/auth/github/callback', passport.authenticate('github', {
-        failureRedirect: CONTEXT_URI
+        failureRedirect: GITHUB_INT_CONTEXT_URI
     }), handleGithubCallback);
 }
 ;
