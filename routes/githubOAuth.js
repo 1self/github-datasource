@@ -1,4 +1,4 @@
-Cvar request = require("request");
+var request = require("request");
 var passport = require('passport');
 var githubStrategy = require('passport-github').Strategy;
 var _ = require('underscore');
