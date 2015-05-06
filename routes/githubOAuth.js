@@ -3,8 +3,8 @@ var passport = require('passport');
 var githubStrategy = require('passport-github').Strategy;
 var _ = require('underscore');
 
-var GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-var GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+var GITHUB_DATASOURCE_CLIENT_ID = process.env.GITHUB_DATASOURCE_CLIENT_ID;
+var GITHUB_DATASOURCE_CLIENT_SECRET = process.env.GITHUB_DATASOURCE_CLIENT_SECRET;
 var GITHUB_INT_CONTEXT_URI = process.env.GITHUB_INT_CONTEXT_URI;
 var INTEGRATIONS_URL = process.env.CONTEXT_URI + '/integrations';
 
@@ -102,8 +102,8 @@ module.exports = function (app, mongoRepository, oneselfService) {
     });
 
     passport.use(new githubStrategy({
-            clientID: GITHUB_CLIENT_ID,
-            clientSecret: GITHUB_CLIENT_SECRET,
+            clientID: GITHUB_DATASOURCE_CLIENT_ID,
+            clientSecret: GITHUB_DATASOURCE_CLIENT_SECRET,
             callbackURL: GITHUB_INT_CONTEXT_URI + "/auth/github/callback"
         },
         function (accessToken, refreshToken, profile, done) {
