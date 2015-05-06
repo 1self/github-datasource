@@ -113,6 +113,9 @@ module.exports = function (mongoRepository, qdService) {
                         }, 0)
                     }
                 };
+                if (event.commit.author.email !== event.commit.committer.email){
+                    singleEventTemplate.actionTags = ["patch"]
+                };
             } else {
                 console.log("ERROR commit ---->", JSON.stringify(event))
             }
@@ -173,9 +176,7 @@ module.exports = function (mongoRepository, qdService) {
 
         var getCommitPromise = function (commitObject) {
             var deferred = Q.defer();
-            console.log("Hitting request")
             var url = commitObject.url + "?access_token=" + userInfo.accessToken;
-            console.log("Hitting url", url);
             var options = {
                 url: url,
                 headers: {
