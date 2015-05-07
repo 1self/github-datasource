@@ -128,12 +128,12 @@ module.exports = function (mongoRepository, qdService) {
         return mappedEvents;
     };
 
-    var sendEventsToQD = function (events, streamInfo) {
+    var sendEventsToQD = function (events, streamInfo, appUri) {
         var deferred = Q.defer();
         if (_.isEmpty(events)) {
             deferred.resolve();
         }
-        qdService.sendBatchEvents(events, streamInfo)
+        qdService.sendBatchEvents(events, streamInfo, appUri)
             .then(function () {
                 console.log("Events sent to 1self!!!");
                 deferred.resolve();
@@ -214,10 +214,10 @@ module.exports = function (mongoRepository, qdService) {
         return deferred.promise;
     };
 
-    this.sendGithubEvents = function (userInfo, streamInfo) {
+    this.sendGithubEvents = function (userInfo, streamInfo, appUri) {
         var syncStartEvent = createSyncStartEvent();
 
-        qdService.sendEvent(syncStartEvent, streamInfo)
+        qdService.sendEvent(syncStartEvent, streamInfo, appUri)
             .then(function () {
                 return fetchGithubPushEvents(userInfo)
             })
@@ -228,11 +228,11 @@ module.exports = function (mongoRepository, qdService) {
                 return getGithubCommitEvents(filteredEvents, userInfo)
             }).then(convertEventsTo1SelfFormat)
             .then(function (eventsToBeSent) {
-                return sendEventsToQD(eventsToBeSent, streamInfo);
+                return sendEventsToQD(eventsToBeSent, streamInfo, appUri);
             })
             .then(function () {
                 var syncCompleteEvent = createSyncCompleteEvent();
-                return qdService.sendEvent(syncCompleteEvent, streamInfo);
+                return qdService.sendEvent(syncCompleteEvent, streamInfo, appUri);
             }).catch(function (error) {
                 console.error("Error occurred :: sendGithubEvents ", error)
             });

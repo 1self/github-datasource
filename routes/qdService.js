@@ -2,17 +2,17 @@ var requestModule = require('request');
 var Q = require('q');
 
 module.exports = function () {
-    var appId = process.env.APP_ID;
-    var appSecret = process.env.APP_SECRET;
-    var oneselfUri = process.env.CONTEXT_URI;
+    var appId = process.env.GITHUB_DATASOURCE_APP_ID;
+    var appSecret = process.env.GITHUB_DATASOURCE_APP_SECRET;
+    //var oneselfUri = process.env.CONTEXT_URI;
 
-    this.registerStream = function (oneselfUsername, token, callbackUrl) {
+    this.registerStream = function (oneselfUsername, token, appUri, callbackUrl) {
         var deferred = Q.defer();
-        console.log("Registering stream...");
+        console.log("Registering stream...", oneselfUsername, token, callbackUrl);
 
         var options = {
             method: 'POST',
-            uri: oneselfUri + '/v1/users/' + oneselfUsername + '/streams',
+            uri: appUri + '/v1/users/' + oneselfUsername + '/streams',
             headers: {
                 'Authorization': appId + ':' + appSecret,
                 'registration-token': token
@@ -39,11 +39,11 @@ module.exports = function () {
         return deferred.promise;
     };
 
-    this.sendBatchEvents = function (events, streamInfo) {
+    this.sendBatchEvents = function (events, streamInfo, appUri) {
         var deferred = Q.defer();
         var options = {
             method: 'POST',
-            uri: oneselfUri + '/v1/streams/' + streamInfo.streamid + '/events/batch',
+            uri: appUri + '/v1/streams/' + streamInfo.streamid + '/events/batch',
             gzip: true,
             headers: {
                 'Authorization': streamInfo.writeToken,
@@ -64,11 +64,11 @@ module.exports = function () {
         return deferred.promise;
     };
 
-    this.sendEvent = function (event, streamInfo) {
+    this.sendEvent = function (event, streamInfo, appUri) {
         var deferred = Q.defer();
         var options = {
             method: 'POST',
-            uri: oneselfUri + '/v1/streams/' + streamInfo.streamid + '/events',
+            uri: appUri + '/v1/streams/' + streamInfo.streamid + '/events',
             gzip: true,
             headers: {
                 'Authorization': streamInfo.writeToken,
@@ -88,11 +88,12 @@ module.exports = function () {
         });
         return deferred.promise;
     };
-    this.link = function(oneselfUsername, streamId) {
+
+    this.link = function(oneselfUsername, streamId, appUri) {
         var deferred = Q.defer();
         var options = {
             method: 'POST',
-            uri: oneselfUri + '/v1/users/' + oneselfUsername + '/link',
+            uri: appUri + '/v1/users/' + oneselfUsername + '/link',
             gzip: true,
             headers: {
                 'Content-type': 'application/json'
