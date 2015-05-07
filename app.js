@@ -20,6 +20,30 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 
+var winston = require('winston');
+winston.add(winston.transports.File, { filename: 'github-datasource.log', level: 'debug', json: false });
+winston.level = 'info';
+winston.error('Errors will be logged here');
+winston.warn('Warns will be logged here');
+winston.info('Info will be logged here');
+winston.verbose('Verbose will be logged here');
+winston.debug('Debug will be logged here');
+winston.silly('Silly will be logged here');
+
+
+var logInfo = function(req, username, message, object){
+  req.logger.info(username + ': ' + message, object);
+}
+
+var logDebug = function(req, username, message, object){
+  req.logger.debug(username + ': ' + message, object);
+}
+
+var logError = function(req, username, message, object){
+  req.logger.error(username + ': ' + message, object);
+}
+
+
 var sessionSecret = process.env.SESSION_SECRET;
 app.use(session({
     secret: sessionSecret,
@@ -35,6 +59,12 @@ app.use(bodyParser.json());
 app.engine('html', swig.renderFile);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'html');
+
+var attachLogger = function(req, res, next){
+    req.logger = winston;
+    next();
+};
+app.use(attachLogger);
 
 var port = process.env.PORT || 5001;
 var server = app.listen(port, function () {
@@ -60,8 +90,10 @@ mongoClient.connect(mongoUri, function (err, databaseConnection) {
 });
 
 app.get("/", function (req, res) {
+    process.env.integrationUrl = req.headers.hostname;
     req.session.oneselfUsername = req.query.username;
     req.session.registrationToken = req.query.token;
+    logInfo(req, req.query.username, 'github setup started: integrationUrl, registrationToken', req.headers.hostname, req.query.token);
     res.render('index');
 });
 
