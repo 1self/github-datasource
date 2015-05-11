@@ -61,7 +61,8 @@ module.exports = function (mongoRepository, qdService) {
                     "objectTags": [
                         "Computer",
                         "Software",
-                        "Source Control"
+                        "Source",
+                        "Control"
                     ],
                     "dateTime": moment(event.created_at).toISOString(),
                     "latestSyncField": {
@@ -145,7 +146,7 @@ module.exports = function (mongoRepository, qdService) {
     var createSyncStartEvent = function () {
         return {
             "dateTime": moment().toISOString(),
-            "objectTags": ["1self integration sync"],
+            "objectTags": ["1self", "integration", "sync"],
             "actionTags": ["start"],
             "source": "1self-GitHub",
             "properties": {
@@ -155,7 +156,7 @@ module.exports = function (mongoRepository, qdService) {
     var createSyncCompleteEvent = function () {
         return {
             "dateTime": moment().toISOString(),
-            "objectTags": ["1self integration sync"],
+            "objectTags": ["1self", "integration", "sync"],
             "actionTags": ["complete"],
             "source": "1self-GitHub",
             "properties": {
