@@ -5,6 +5,7 @@ var request = require('request');
 var Q = require('q');
 
 module.exports = function (mongoRepository, qdService) {
+
     var getGithubPushEventsPerPage = function (page, userInfo) {
         var githubUsername = userInfo.githubUsername;
         var user_api_url = "/users/" + githubUsername;
@@ -24,6 +25,7 @@ module.exports = function (mongoRepository, qdService) {
         });
         return deferred.promise;
     };
+
     var fetchGithubPushEvents = function (userInfo) {
         console.log("fetchGithubPushEvents")
         var deferred = Q.defer();
@@ -47,10 +49,8 @@ module.exports = function (mongoRepository, qdService) {
 
     var convertEventsTo1SelfFormat = function (filteredEvents) {
 
-        var convertEventTo1SelfFormat = function (event) {
-            var clone = function (obj) {
-                return JSON.parse(JSON.stringify(obj));
-            };
+        var convertEventTo1SelfFormat = function (acc, event) {
+
             if (event.type == "PushEvent") {
                 var singleEventTemplate = {
                     "actionTags": [
@@ -75,6 +75,8 @@ module.exports = function (mongoRepository, qdService) {
                         })
                     }
                 };
+                return acc.concat(singleEventTemplate)
+
             } else if (event.commit != undefined) {
                 var singleEventTemplate = {
                     "actionTags": [
@@ -114,15 +116,19 @@ module.exports = function (mongoRepository, qdService) {
                         }, 0)
                     }
                 };
-                if (event.commit.author.email !== event.commit.committer.email){
+                if (event.commit.author.email !== event.commit.committer.email) {
                     singleEventTemplate.actionTags = ["patch"]
-                };
+                }
+                ;
+
+                return acc.concat(singleEventTemplate)
             } else {
                 console.log("ERROR commit ---->", JSON.stringify(event))
+                return acc;
+
             }
-            return clone(singleEventTemplate);
         };
-        var mappedEvents = _.map(filteredEvents, convertEventTo1SelfFormat);
+        var mappedEvents = _.reduce(filteredEvents, convertEventTo1SelfFormat, []);
 
         console.log("MAPPED EVENTS", mappedEvents);
 
@@ -149,8 +155,7 @@ module.exports = function (mongoRepository, qdService) {
             "objectTags": ["1self", "integration", "sync"],
             "actionTags": ["start"],
             "source": "1self-GitHub",
-            "properties": {
-            }
+            "properties": {}
         };
     };
     var createSyncCompleteEvent = function () {
@@ -159,8 +164,7 @@ module.exports = function (mongoRepository, qdService) {
             "objectTags": ["1self", "integration", "sync"],
             "actionTags": ["complete"],
             "source": "1self-GitHub",
-            "properties": {
-            }
+            "properties": {}
         };
     };
 
@@ -169,6 +173,7 @@ module.exports = function (mongoRepository, qdService) {
         var deferred = Q.defer();
 
         var commitObjects = [];
+
         _.each(filteredEvents, function (event) {
             _.each(event.payload.commits, function (commit) {
                 commitObjects.push({url: commit['url'], pushId: event.payload["push_id"]})
