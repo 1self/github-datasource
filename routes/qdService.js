@@ -6,10 +6,16 @@ module.exports = function () {
     var appSecret = process.env.GITHUB_APP_SECRET;
     var oneselfUri = process.env.CONTEXT_URI;
 
+    console.log('1self service env');
+    console.log(process.env.GITHUB_APP_ID);
+    console.log(process.env.GITHUB_APP_SECRET);
+    console.log(process.env.CONTEXT_URI);
     this.registerStream = function (oneselfUsername, token, appUri, callbackUrl) {
         var deferred = Q.defer();
-        console.log("Registering stream...", oneselfUsername, token, callbackUrl);
-
+        console.log("Registering stream...", oneselfUsername, token, callbackUrl, appUri);
+	
+	var requestUri = appUri + '/v1/users/' + oneselfUsername + '/streams';
+	console.log(requestUri);
         var options = {
             method: 'POST',
             uri: appUri + '/v1/users/' + oneselfUsername + '/streams',
@@ -28,6 +34,7 @@ module.exports = function () {
                 return;
             }
             if (response.statusCode === 400) {
+                console.log(response.body);
                 deferred.reject('Invalid username and registrationToken', null);
                 return;
             }

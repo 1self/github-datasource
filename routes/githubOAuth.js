@@ -7,6 +7,11 @@ var GITHUB_DATASOURCE_CLIENT_ID = process.env.GITHUB_DATASOURCE_CLIENT_ID;
 var GITHUB_DATASOURCE_CLIENT_SECRET = process.env.GITHUB_DATASOURCE_CLIENT_SECRET;
 var GITHUB_INT_CONTEXT_URI = process.env.GITHUB_INT_CONTEXT_URI;
 
+console.log('env');
+console.log(GITHUB_DATASOURCE_CLIENT_ID);
+console.log(GITHUB_DATASOURCE_CLIENT_SECRET);
+console.log(GITHUB_INT_CONTEXT_URI);
+
 module.exports = function (app, mongoRepository, oneselfService) {
 
     var handleGithubCallback = function (req, res) {
@@ -105,6 +110,9 @@ module.exports = function (app, mongoRepository, oneselfService) {
         done(null, obj);
     });
 
+    console.log(GITHUB_DATASOURCE_CLIENT_ID);
+    console.log(GITHUB_DATASOURCE_CLIENT_SECRET);
+    console.log(GITHUB_INT_CONTEXT_URI);
     passport.use(new githubStrategy({
             clientID: GITHUB_DATASOURCE_CLIENT_ID,
             clientSecret: GITHUB_DATASOURCE_CLIENT_SECRET,
