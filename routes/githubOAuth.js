@@ -6,7 +6,6 @@ var _ = require('underscore');
 var GITHUB_DATASOURCE_CLIENT_ID = process.env.GITHUB_DATASOURCE_CLIENT_ID;
 var GITHUB_DATASOURCE_CLIENT_SECRET = process.env.GITHUB_DATASOURCE_CLIENT_SECRET;
 var GITHUB_INT_CONTEXT_URI = process.env.GITHUB_INT_CONTEXT_URI;
-var INTEGRATIONS_URL = process.env.CONTEXT_URI + '/integrations';
 
 module.exports = function (app, mongoRepository, oneselfService) {
 
@@ -28,6 +27,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
         };
 
         var syncGithubEvents = function (callbackUrl, writeToken) {
+
             request({
                 method: 'GET',
                 uri: callbackUrl,
@@ -41,13 +41,14 @@ module.exports = function (app, mongoRepository, oneselfService) {
         };
         mongoRepository.findByGithubUsername(githubUsername)
             .then(function (user) {
+
                 if (user && user.streamid) {
                     var callbackUrlForUser = callbackUrl
                         .replace('{{streamid}}', user.streamid)
                         .replace('{{latestSyncField}}', user.lastGithubSyncDate.toISOString());
                     console.log("Syncing github events");
                     syncGithubEvents(callbackUrlForUser, user.writeToken);
-                    oneselfService.link(oneselfUsername, user.streamid)
+                    oneselfService.link(oneselfUsername, user.streamid, req.session.appUri)
                         .then(function () {
                             var findQuery = {
                                 'githubUsername': githubUsername
@@ -66,11 +67,14 @@ module.exports = function (app, mongoRepository, oneselfService) {
                             return mongoRepository.update(findQuery, updateQuery)
                         })
                         .then(function () {
-                            res.redirect(INTEGRATIONS_URL);
-                        });
+                            res.redirect(req.session.appUri + "/integrations");
+                        })
+                        .catch(function(error){
+                            console.log("Error occurred", error);
+                        })
                 }
                 else {
-                    oneselfService.registerStream(oneselfUsername, registrationToken, callbackUrl)
+                    oneselfService.registerStream(oneselfUsername, registrationToken, req.session.appUri, callbackUrl)
                         .then(function (stream) {
                             mongoRepository.insert(document)
                                 .then(function () {
@@ -78,8 +82,8 @@ module.exports = function (app, mongoRepository, oneselfService) {
                                         .replace('{{streamid}}', stream.streamid)
                                         .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
                                     syncGithubEvents(callbackUrlForUser, stream.writeToken);
-                                    
-                                    res.redirect(INTEGRATIONS_URL);
+
+                                    res.redirect(req.session.appUri + "/integrations");
                                 })
                         }, function (error) {
                             res.render('error', {

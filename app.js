@@ -95,10 +95,12 @@ mongoClient.connect(mongoUri, function (err, databaseConnection) {
 });
 
 app.get("/", function (req, res) {
-    process.env.integrationUrl = req.headers.hostname;
+    //req.session.integrationUri = req.headers['x-forwarded-host'];
+    req.session.appUri = req.headers.referer.split("/").slice(0,3).join("/");
+    process.env.appUri = req.session.appUri;
     req.session.oneselfUsername = req.query.username;
     req.session.registrationToken = req.query.token;
-    logInfo(req, req.query.username, 'github setup started: integrationUrl, registrationToken', req.headers.hostname, req.query.token);
+    logInfo(req, req.query.username, 'github setup started: appUri, registrationToken', [req.session.appUri, req.query.token]);
     res.render('index');
 });
 
@@ -115,7 +117,7 @@ app.get("/authSuccess", function (req, res) {
                     githubUsername: githubUsername,
                     accessToken: user.accessToken
                 };
-                return githubEvents.sendGithubEvents(userInfo, streamInfo);
+                return githubEvents.sendGithubEvents(userInfo, streamInfo, process.env.appUri);
             });
         res.status(200).send("ok");
     }
