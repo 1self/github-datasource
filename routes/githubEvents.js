@@ -105,15 +105,7 @@ module.exports = function (mongoRepository, qdService) {
                         "line-changes": event.stats.total,
                         "line-additions": event.stats.additions,
                         "line-deletions": event.stats.deletions,
-                        "file-changes": _.reduce(event.files, function (s, e) {
-                            return s + e.changes
-                        }, 0),
-                        "file-additions": _.reduce(event.files, function (s, e) {
-                            return s + e.additions
-                        }, 0),
-                        "file-deletions": _.reduce(event.files, function (s, e) {
-                            return s + e.deletions
-                        }, 0)
+                        "file-changes": event.files.length)
                     }
                 };
                 if (event.commit.author.email !== event.commit.committer.email) {
@@ -235,7 +227,8 @@ module.exports = function (mongoRepository, qdService) {
             })
             .then(function (filteredEvents) {
                 return getGithubCommitEvents(filteredEvents, userInfo)
-            }).then(convertEventsTo1SelfFormat)
+            })
+            .then(convertEventsTo1SelfFormat)
             .then(function (eventsToBeSent) {
                 return sendEventsToQD(eventsToBeSent, streamInfo, appUri);
             })
