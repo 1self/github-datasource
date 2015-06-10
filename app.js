@@ -22,7 +22,7 @@ app.use(bodyParser.urlencoded({
 
 var winston = require('winston');
 winston.add(winston.transports.File, { filename: 'github-datasource.log', level: 'debug', json: false });
-winston.level = 'info';
+winston.level = 'debug';
 winston.error('Errors will be logged here');
 winston.warn('Warns will be logged here');
 winston.info('Info will be logged here');
