@@ -174,7 +174,7 @@ module.exports = function (mongoRepository, qdService) {
             })
         });
 
-        var getCommitPromise = function (commitObject) {
+        var getCommitPromise = function (commitObject, delay) {
             var deferred = Q.defer();
             var url = commitObject.url + "?access_token=" + userInfo.accessToken;
             var options = {
@@ -184,24 +184,27 @@ module.exports = function (mongoRepository, qdService) {
                 }
             };
 
-            request(options, function (err, res, body) {
-                if (!err) {
-                    var commit = JSON.parse(body);
-                    commit.pushId = commitObject.pushId
-                    deferred.resolve(commit);
-                }
-                else {
-                    console.log("Error occurred :: getCommitPromise", err);
-                    deferred.reject(err);
-                }
-            });
+            setTimeout(function(){
+                request(options, function (err, res, body) {
+                    if (!err) {
+                        var commit = JSON.parse(body);
+                        commit.pushId = commitObject.pushId
+                        deferred.resolve(commit);
+                    }
+                    else {
+                        console.log("Error occurred :: getCommitPromise", err);
+                        deferred.reject(err);
+                    }
+                }).end();
+            }, 
+            delay);
             return deferred.promise;
         };
 
         var promiseArray = [];
 
-        _.map(commitObjects, function (commitObject) {
-            promiseArray.push(getCommitPromise(commitObject))
+        _.map(commitObjects, function (commitObject, i) {
+                promiseArray.push(getCommitPromise(commitObject, i * 100));
         });
 
         Q.all(promiseArray).then(function (commitEvents) {

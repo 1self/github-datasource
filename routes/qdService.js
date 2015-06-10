@@ -2,8 +2,8 @@ var requestModule = require('request');
 var Q = require('q');
 
 module.exports = function () {
-    var appId = process.env.APP_ID;
-    var appSecret = process.env.APP_SECRET;
+    var appId = process.env.GITHUB_APP_ID;
+    var appSecret = process.env.GITHUB_APP_SECRET;
     var oneselfUri = process.env.CONTEXT_URI;
 
     this.registerStream = function (oneselfUsername, token, callbackUrl) {
