@@ -30,6 +30,14 @@ winston.verbose('Verbose will be logged here');
 winston.debug('Debug will be logged here');
 winston.silly('Silly will be logged here');
 
+winston.info('DBURI=' + process.env.DBURI);
+var mongoUri = process.env.DBURI;
+
+winston.info('PORT=' + process.env.PORT);
+var port = process.env.PORT || 5001;
+
+winston.info('SESSION_SECRET=' + process.env.SESSION_SECRET.substring(0,2) + '...');
+var sessionSecret = process.env.SESSION_SECRET;
 
 var logInfo = function(req, username, message, object){
   req.logger.info(username + ': ' + message, object);
@@ -43,8 +51,6 @@ var logError = function(req, username, message, object){
   req.logger.error(username + ': ' + message, object);
 }
 
-
-var sessionSecret = process.env.SESSION_SECRET;
 app.use(session({
     secret: sessionSecret,
     cookie: {
@@ -66,13 +72,12 @@ var attachLogger = function(req, res, next){
 };
 app.use(attachLogger);
 
-var port = process.env.PORT || 5001;
 var server = app.listen(port, function () {
     console.log("Listening on " + port);
 });
 
 var qdService = new QdService();
-var mongoUri = process.env.DBURI;
+
 var mongoRepository;
 var githubEvents;
 var githubOAuth;
