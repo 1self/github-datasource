@@ -21,7 +21,6 @@ app.use(bodyParser.urlencoded({
 }));
 
 var winston = require('winston');
-<<<<<<< HEAD
 winston.add(winston.transports.File, { filename: 'github-datasource.log', level: 'debug', json: false });
 winston.level = 'debug';
 winston.add(winston.transports.File, { filename: 'github-datasource.log', level: 'debug', json: false });

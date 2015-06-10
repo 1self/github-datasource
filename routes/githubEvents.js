@@ -105,7 +105,7 @@ module.exports = function (mongoRepository, qdService) {
                         "line-changes": event.stats.total,
                         "line-additions": event.stats.additions,
                         "line-deletions": event.stats.deletions,
-                        "file-changes": event.files.length)
+                        "file-changes": event.files.length
                     }
                 };
                 if (event.commit.author.email !== event.commit.committer.email) {
