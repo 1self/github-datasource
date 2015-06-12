@@ -64,15 +64,16 @@ module.exports = function (mongoRepository, qdService) {
                         "Source",
                         "Control"
                     ],
+                    "id": event.payload["push_id"],
+                    "childIds": _.map(event.payload.commits, function (c) {
+                            return c['sha']
+                        }),
                     "dateTime": moment(event.created_at).toISOString(),
                     "latestSyncField": {
                         "$date": moment(event.created_at).toISOString()
                     },
                     "properties": {
-                        "pushId": event.payload["push_id"],
-                        "commitIds": _.map(event.payload.commits, function (c) {
-                            return c['sha']
-                        })
+                        "commits": event.payload.size
                     }
                 };
                 return acc.concat(singleEventTemplate)
@@ -94,18 +95,18 @@ module.exports = function (mongoRepository, qdService) {
                     "latestSyncField": {
                         "$date": moment(event.commit.author.date).toISOString()
                     },
+                    "id": event.sha,
+                    "parentId": event.pushId,
+                    "url": event.commit.url,
                     "properties": {
-                        "pushId": event.pushId,
-                        "sha": event.sha,
                         "author-name": event.commit.author.name,
                         "author-email": event.commit.author.email,
                         "author-date": event.commit.author.date,
                         "message": event.commit.message,
-                        "url": event.commit.url,
                         "line-changes": event.stats.total,
                         "line-additions": event.stats.additions,
                         "line-deletions": event.stats.deletions,
-                        "file-changes": event.files.length)
+                        "file-changes": event.files.length
                     }
                 };
                 if (event.commit.author.email !== event.commit.committer.email) {
@@ -168,6 +169,10 @@ module.exports = function (mongoRepository, qdService) {
 
         _.each(filteredEvents, function (event) {
             _.each(event.payload.commits, function (commit) {
+                if(commit.author.name !== userInfo.displayName && commit.author.name !== userInfo.githubUsername){
+                    console.log("" + userInfo.githubUsername + ": ignoring commit for " + commit.author.name);
+                    return;
+                }
                 commitObjects.push({url: commit['url'], pushId: event.payload["push_id"]})
             })
         });
