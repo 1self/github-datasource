@@ -116,7 +116,8 @@ app.get("/authSuccess", function (req, res) {
             .then(function (user) {
                 var userInfo = {
                     githubUsername: githubUsername,
-                    accessToken: user.accessToken
+                    accessToken: user.accessToken,
+                    displayName: user.displayName
                 };
                 return githubEvents.sendGithubEvents(userInfo, streamInfo, process.env.appUri);
             });

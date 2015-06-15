@@ -26,9 +26,12 @@ module.exports = function (app, mongoRepository, oneselfService) {
             + '&latestSyncField={{latestSyncField}}'
             + '&streamid={{streamid}}';
 
+        // we use the display name to spot commits that weren't made by the committer. 
+        // this can happen when a rebase occurs.
         var document = {
             githubUsername: githubUsername,
-            accessToken: req.user.accessToken
+            accessToken: req.user.accessToken,
+            displayName: req.user.profile.displayName,
         };
 
         var syncGithubEvents = function (callbackUrl, writeToken) {
