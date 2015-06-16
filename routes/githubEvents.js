@@ -63,6 +63,7 @@ module.exports = function (mongoRepository, qdService) {
     };
 
     var convertEventsTo1SelfFormat = function (filteredEvents, username) {
+        var deferred = Q.defer();
         logDebug(username, 'converting events to 1self format');
         var convertEventTo1SelfFormat = function (acc, event) {
             logDebug(username, 'raw event: ', event);
@@ -140,6 +141,10 @@ module.exports = function (mongoRepository, qdService) {
                     }
                 }
                 
+                if(event.committerIsAuthor === false){
+                    singleEventTemplate.actionTags = ["merge"];
+                }
+
                 if (event.commit.author.email !== event.commit.committer.email) {
                     singleEventTemplate.actionTags = ["patch"]
                 }
@@ -202,13 +207,22 @@ module.exports = function (mongoRepository, qdService) {
 
         var commitObjects = [];
 
+        var userEmailParts = /(.*?)(\+.*?)?(@.*)/g.exec(userInfo.email);
+        var userEmail = userEmailParts[1] + userEmailParts[3];
+
         _.each(filteredEvents, function (event) {
             _.each(event.payload.commits, function (commit) {
-                if(commit.author.name !== commit.committer.name){
-                    logDebug(userInfo.githubUsername, 'ignoring commit'[userInfo, commit.author, commit.committer, commit, event]);
-                    return;
+                var commitReq = {
+                    url: commit['url'], 
+                    pushId: event.payload["push_id"], 
+                    repo: event.repo.name
                 }
-                commitObjects.push({url: commit['url'], pushId: event.payload["push_id"], repo: event.repo.name})
+
+                var commitEmailParts = /(.*?)(\+.*?)?(@.*)/g.exec(commit.author.email);
+                var commitEmail = commitEmailParts[1] + commitEmailParts[3];
+                commitReq.committerIsAuthor = commitEmail === userEmail;
+                logDebug(userInfo.githubUsername, 'commit req', commitReq);
+                commitObjects.push(commitReq);
             })
         });
 
@@ -231,10 +245,11 @@ module.exports = function (mongoRepository, qdService) {
                         var commit = JSON.parse(body);
                         commit.pushId = commitObject.pushId;
                         commit.repo = commitObject.repo;
+                        commit.committerIsAuthor = commitObject.committerIsAuthor;
                         deferred.resolve(commit);
                     }
                     else {
-                        logDebug(githubUsername.username, 'Error occurred getting commit: options, err: ', [options, err]);
+                        logDebug(userInfo.githubUsername, 'Error occurred getting commit: options, err: ', [options, err]);
                         deferred.reject(err);
                     }
                 }).end();
@@ -274,7 +289,7 @@ module.exports = function (mongoRepository, qdService) {
                 return getGithubCommitEvents(filteredEvents, userInfo);
             })
             .then(function (filteredEvents){
-                convertEventsTo1SelfFormat(filteredEvents, userInfo.githubUsername);
+                return convertEventsTo1SelfFormat(filteredEvents, userInfo.githubUsername);
             })
             .then(function (eventsToBeSent) {
                 return sendEventsToQD(eventsToBeSent, streamInfo, appUri, userInfo);
