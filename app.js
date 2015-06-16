@@ -21,8 +21,7 @@ app.use(bodyParser.urlencoded({
 }));
 
 var winston = require('winston');
-winston.add(winston.transports.File, { filename: 'github-datasource.log', level: 'debug', json: false });
-winston.level = 'debug';
+winston.add(winston.transports.File, { filename: 'github.log', level: 'debug', json: false });
 winston.error('Errors will be logged here');
 winston.warn('Warns will be logged here');
 winston.info('Info will be logged here');
@@ -38,6 +37,8 @@ var port = process.env.PORT || 5001;
 
 winston.info('SESSION_SECRET=' + process.env.SESSION_SECRET.substring(0,2) + '...');
 var sessionSecret = process.env.SESSION_SECRET;
+
+var logger = winston;
 
 var logInfo = function(req, username, message, object){
   req.logger.info(username + ': ' + message, object);
@@ -73,7 +74,7 @@ var attachLogger = function(req, res, next){
 app.use(attachLogger);
 
 var server = app.listen(port, function () {
-    console.log("Listening on " + port);
+    logger.info("Listening on " + port);
 });
 
 var qdService = new QdService();
@@ -83,11 +84,10 @@ var githubEvents;
 var githubOAuth;
 mongoClient.connect(mongoUri, function (err, databaseConnection) {
     if (err) {
-        console.error("Could not connect to Mongodb with URI : " + mongoUri);
-        console.error(err);
+        logger.error("Could not connect to Mongodb with URI: ", [mongoUri, err]);
         process.exit(1);
     } else {
-        console.log("connected to mongo : ", mongoUri);
+        logger.info("connected to mongo: ", mongoUri);
         mongoRepository = new MongoRepository(databaseConnection);
         githubEvents = new GithubEvents(mongoRepository, qdService);
         githubOAuth = new GithubOAuth(app, mongoRepository, qdService);
