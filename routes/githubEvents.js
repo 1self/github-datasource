@@ -205,7 +205,7 @@ module.exports = function (mongoRepository, qdService) {
         _.each(filteredEvents, function (event) {
             _.each(event.payload.commits, function (commit) {
                 if(commit.author.name !== userInfo.displayName && commit.author.name !== userInfo.githubUsername){
-                    logDebug(userInfo.githubUsername, 'ignoring commit for ' + commit.author.name);
+                    logDebug(userInfo.githubUsername, 'ignoring commit for ' + commit.author.name, commit.author);
                     return;
                 }
                 commitObjects.push({url: commit['url'], pushId: event.payload["push_id"], repo: event.repo.name})
