@@ -28,9 +28,10 @@ logger.info(GITHUB_INT_CONTEXT_URI);
 
 module.exports = function (app, mongoRepository, oneselfService) {
 
-    var handleGithubCallback = function (req, res) {
+    var handleNewAuthCallback = function(req, res){
         var githubUser = req.user.profile;
         var githubUsername = githubUser.username;
+
         req.session.accessToken = req.user.accessToken;
         req.session.githubUsername = githubUsername;
         var oneselfUsername = req.session.oneselfUsername;
@@ -86,62 +87,101 @@ module.exports = function (app, mongoRepository, oneselfService) {
 
         getEmailAddress(req.session.accessToken)
         .then(function(){
-            mongoRepository.findByGithubUsername(userInfo.githubUsername);
+            return mongoRepository.findByGithubUsername(userInfo.githubUsername);
         })
         .then(function (user) {
-            if (user && user.streamid) {
-                var callbackUrlForUser = callbackUrl
-                    .replace('{{streamid}}', user.streamid)
-                    .replace('{{latestSyncField}}', user.lastGithubSyncDate.toISOString());
-                console.log("Syncing github events");
-                syncGithubEvents(callbackUrlForUser, user.writeToken);
-                oneselfService.link(oneselfUsername, user.streamid, req.session.appUri)
-                    .then(function () {
-                        var findQuery = {
-                            'githubUsername': githubUsername
-                        };
-                        var updateQuery = {
-                            "$set": {
-                                "accessToken": req.user.accessToken
-                            },
-                            "$unset": {
-                                "streamid": 1,
-                                "readToken": 1,
-                                "writeToken": 1,
-                                "lastGithubSyncDate": 1
-                            }
-                        };
-                        return mongoRepository.update(findQuery, updateQuery)
-                    })
-                    .then(function () {
-                        res.redirect(req.session.appUri + "/integrations");
-                    })
-                    .catch(function(error){
-                        logError(userInfo.githubUsername, "Error occurred", error);
-                    })
-            }
-            else {
-                oneselfService.registerStream(oneselfUsername, registrationToken, req.session.appUri, callbackUrl)
-                    .then(function (stream) {
-                        mongoRepository.insert(userInfo)
-                            .then(function () {
-                                var callbackUrlForUser = callbackUrl
-                                    .replace('{{streamid}}', stream.streamid)
-                                    .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
-                                syncGithubEvents(callbackUrlForUser, stream.writeToken);
+            // we hit this if we are doing a re-auth and the user already exists
+            oneselfService.registerStream(oneselfUsername, registrationToken, req.session.appUri, callbackUrl)
+                .then(function (stream) {
+                    mongoRepository.insert(userInfo)
+                        .then(function () {
+                            var callbackUrlForUser = callbackUrl
+                                .replace('{{streamid}}', stream.streamid)
+                                .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
+                            syncGithubEvents(callbackUrlForUser, stream.writeToken);
 
-                                res.redirect(req.session.appUri + "/integrations");
-                            })
-                    }, function (error) {
-                        res.render('error', {
-                            error: error
-                        });
-                    })
-            }
+                            res.redirect(req.session.appUri + "/integrations");
+                        })
+                }, function (error) {
+                    res.render('error', {
+                        error: error
+                    });
+                })
         })
         .catch(function (error) {
             logError(userInfo.githubUsername, "Error in github callback: ", error);
         });
+    }
+
+    var handleReauthCallback = function(req, res){
+        var githubUser = req.user.profile;
+        var githubUsername = githubUser.username;
+
+        logDebug(githubUsername, "github User is: " + JSON.stringify(githubUser));
+        var callbackUrl = GITHUB_INT_CONTEXT_URI + '/authSuccess?username=' + githubUsername
+            + '&latestSyncField={{latestSyncField}}'
+            + '&streamid={{streamid}}';
+
+        var userInfo = {
+            githubUsername: githubUsername,
+            accessToken: req.user.accessToken,
+            displayName: req.user.profile.displayName,
+        };
+
+        var getEmailAddress = function (accessToken) {
+            var deferred = q.defer();
+            var options = {
+                url: "https://api.github.com/user/emails?access_token=" + accessToken,
+                headers: {
+                    "User-Agent": "1self"
+                }
+            };
+            request(options, function (err, res, body) {
+                if (!err) {
+                    userInfo.email = JSON.parse(body)[0].email; 
+                    logDebug(userInfo.githubUsername, 'email retrieved from users github profile', userInfo.email);
+                    deferred.resolve();
+                }
+                else {
+                    logDebug(userInfo.githubUsername, 'error trying to get email: ', err);                    
+                    deferred.reject(err);
+                }
+            });
+            return deferred.promise;
+        };
+
+        getEmailAddress(userInfo.accessToken)
+        .then(function(){
+            return mongoRepository.findByGithubUsername(githubUsername);
+        })
+        .then(function (user) {
+            var query = {
+                _id: user._id
+            }
+
+            var operation = {
+                $set: {
+                    accessToken: userInfo.accessToken,
+                    email: userInfo.email
+                }
+            }
+                
+            mongoRepository.update(query, operation)
+            .then(function () {
+                res.redirect(req.session.redirect);
+            })                
+        })
+        .catch(function (error) {
+            logError(userInfo.githubUsername, "Error in github callback: ", error);
+        });
+    }
+    var handleGithubCallback = function (req, res) {
+        if(req.session.reauth){
+            handleReauthCallback(req, res);
+        }
+        else{
+            handleNewAuthCallback(req, res);
+        }
     };
 
     passport.serializeUser(function (user, done) {

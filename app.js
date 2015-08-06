@@ -96,12 +96,32 @@ mongoClient.connect(mongoUri, function (err, databaseConnection) {
 
 app.get("/", function (req, res) {
     //req.session.integrationUri = req.headers['x-forwarded-host'];
-    req.session.appUri = req.headers.referer.split("/").slice(0,3).join("/");
-    process.env.appUri = req.session.appUri;
+    req.session.appUri = req.headers.referer === undefined ? '/' : req.headers.referer.split("/").slice(0,3).join("/");
+    process.env.appUri = req.session.appUri;    
     req.session.oneselfUsername = req.query.username;
     req.session.registrationToken = req.query.token;
     logInfo(req, req.query.username, 'github setup started: appUri, registrationToken', [req.session.appUri, req.query.token]);
     res.render('index');
+});
+
+app.get("/reauth", function (req, res) {
+    //req.session.integrationUri = req.headers['x-forwarded-host'];
+    req.session.appUri = process.env.CONTEXT_URI;
+    req.session.redirect = '/reauth/complete';  
+    req.session.reauth = true;
+    req.session.username = req.query.username;
+    logInfo(req, req.query.username, 'reauth page hit, ', [req.session.appUri, req.query.token]);
+    res.render('reauth');
+});
+
+app.get("/reauth/complete", function (req, res) {
+    //req.session.integrationUri = req.headers['x-forwarded-host'];
+    req.session.appUri = null;
+    req.session.redirect = null
+    req.session.reauth = null;
+    req.session.username = null;
+    logInfo(req, req.query.username, 'reauth complete page served, ', [req.session.appUri, req.query.token]);
+    res.render('reauthcomplete');
 });
 
 app.get("/authSuccess", function (req, res) {
