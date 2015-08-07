@@ -139,6 +139,11 @@ app.get('/', function (req, res) {
 });
 
 app.get('/reauth', function (req, res) {
+    if(req.query.username === undefined){
+        res.render('reauthUnknownUser');
+        return;
+    }
+
     //req.session.integrationUri = req.headers['x-forwarded-host'];
     req.session.appUri = process.env.CONTEXT_URI;
     req.session.redirect = '/reauth/complete';  
