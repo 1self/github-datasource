@@ -117,7 +117,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
         var githubUser = req.user.profile;
         var githubUsername = githubUser.username;
 
-        logDebug(githubUsername, "github User is: " + JSON.stringify(githubUser));
+        logDebug(githubUsername, "github User is: ", JSON.stringify(githubUser));
         var callbackUrl = GITHUB_INT_CONTEXT_URI + '/authSuccess?username=' + githubUsername
             + '&latestSyncField={{latestSyncField}}'
             + '&streamid={{streamid}}';
