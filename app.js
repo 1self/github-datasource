@@ -25,8 +25,11 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 
+
 var winston = require('winston');
-winston.add(winston.transports.File, { filename: 'github.log', level: 'debug', json: false });
+var filename = process.env.LOGGINGDIR ? path.join(process.env.LOGGINGDIR, 'github.log') : 'github.log';
+winston.info('logging debug messages to ' + filename);
+winston.add(winston.transports.File, { filename: filename, level: 'debug', json: false });
 winston.error('Errors will be logged here');
 winston.warn('Warns will be logged here');
 winston.info('Info will be logged here');
