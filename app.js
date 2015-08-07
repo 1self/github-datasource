@@ -99,7 +99,7 @@ app.engine('html', swig.renderFile);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'html');
 
-var attachLogger = function, res, next){
+var attachLogger = function(req, res, next){
     req.logger = winston;
     next();
 };
