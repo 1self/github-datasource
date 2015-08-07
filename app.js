@@ -99,7 +99,7 @@ app.engine('html', swig.renderFile);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'html');
 
-var attachLogger = function(req, res, next){
+var attachLogger = function, res, next){
     req.logger = winston;
     next();
 };
@@ -144,8 +144,8 @@ app.get('/reauth', function (req, res) {
     req.session.redirect = '/reauth/complete';  
     req.session.reauth = true;
     req.session.username = req.query.username;
-    logger.logInfo(req, req.query.username, 'reauthing', [req.session.appUri, req.query.token]);
-    logger.logInfo(req, req.query.username, 'serving reauth page');
+    logger.logInfo(req.query.username, 'reauthing', [req.session.appUri, req.query.token]);
+    logger.logInfo(req.query.username, 'serving reauth page');
     res.render('reauth');
 });
 
@@ -155,8 +155,8 @@ app.get('/reauth/complete', function (req, res) {
     req.session.redirect = null
     req.session.reauth = null;
     req.session.username = null;
-    logger.logInfo(req, req.query.username, 'reauthing complete, ', [req.session.appUri, req.query.token]);
-    logger.logDebug(req, req.query.username, 'serving reauth complete page');
+    logger.logInfo(req.query.username, 'reauthing complete, ', [req.session.appUri, req.query.token]);
+    logger.logDebug(req.query.username, 'serving reauth complete page');
     res.render('reauthcomplete');
 });
 
