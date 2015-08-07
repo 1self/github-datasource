@@ -189,7 +189,7 @@ app.get('/authSuccess', function (req, res) {
             return githubEvents.sendGithubEvents(userInfo, streamInfo, process.env.appUri);
         })
         .catch(function(error){
-            logger.logError(githubUsername, 'sync requested for unknown user');
+            logger.logError(githubUsername, 'sync requested for unknown user', error);
         });
 
         res.status(200).send('ok, sync request acknowledged');
