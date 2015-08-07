@@ -91,7 +91,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
         })
         .then(function (user) {
             // we hit this if we are doing a re-auth and the user already exists
-            oneselfService.registerStream(oneselfUsername, registrationToken, req.session.appUri, callbackUrl)
+            oneselfService.registerStream(oneselfUsername, registrationToken, process.env.APIURI, callbackUrl)
                 .then(function (stream) {
                     mongoRepository.insert(userInfo)
                         .then(function () {

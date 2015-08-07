@@ -43,6 +43,8 @@ var mongoUri = process.env.DBURI;
 winston.info('PORT=' + process.env.PORT);
 var port = process.env.PORT || 5001;
 
+winston.info('APIURI=' + process.env.APIURI);
+
 winston.info('SESSION_SECRET=' + process.env.SESSION_SECRET.substring(0,2) + '...');
 var sessionSecret = process.env.SESSION_SECRET;
 
@@ -131,7 +133,7 @@ mongoClient.connect(mongoUri, function (err, databaseConnection) {
 app.get('/', function (req, res) {
     //req.session.integrationUri = req.headers['x-forwarded-host'];
     req.session.appUri = req.headers.referer === undefined ? '/' : req.headers.referer.split('/').slice(0,3).join('/');
-    process.env.appUri = req.session.appUri;    
+    process.env.appUri = req.session.appUri;        
     req.session.oneselfUsername = req.query.username;
     req.session.registrationToken = req.query.token;
     logger.logInfo(req.query.username, 'github setup started: appUri, registrationToken', [req.session.appUri, req.query.token]);
