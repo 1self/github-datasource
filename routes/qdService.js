@@ -30,6 +30,11 @@ module.exports = function () {
             }
         };
         requestModule(options, function (e, response, body) {
+            if (e) {
+                deferred.reject("Error: ", e);
+                return;
+            }
+
             if (response.statusCode === 401) {
                 deferred.reject('auth error: check your appId and appSecret', null);
                 return;
@@ -39,9 +44,7 @@ module.exports = function () {
                 deferred.reject('Invalid username and registrationToken', null);
                 return;
             }
-            if (e) {
-                deferred.reject("Error: ", e);
-            }
+            
             deferred.resolve(body);
         });
         return deferred.promise;
