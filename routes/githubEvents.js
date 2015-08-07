@@ -118,11 +118,13 @@ module.exports = function (mongoRepository, qdService) {
                     'id': event.sha,
                     'parentId': event.pushId,
                     'url': event.commit.url,
-                    'properties': {
+                    'info': {
+                        'message': event.commit.message,
                         'author-name': event.commit.author.name,
                         'author-email': event.commit.author.email,
-                        'author-date': event.commit.author.date,
-                        'message': event.commit.message,
+                        'author-date': event.commit.author.date
+                    },
+                    'properties': {
                         'line-changes': event.stats.total,
                         'line-additions': event.stats.additions,
                         'line-deletions': event.stats.deletions,
