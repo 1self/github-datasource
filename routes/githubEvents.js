@@ -279,7 +279,7 @@ module.exports = function (mongoRepository, qdService) {
     };
 
     this.sendGithubEvents = function (userInfo, streamInfo, appUri) {
-        logger.logInfo(userInfo.githubUsername, 'starting sync, sending start sync event');
+        logger.logInfo(userInfo.githubUsername, 'starting sync, sending start sync event, [appUri]', [appUri]);
         var syncStartEvent = createSyncStartEvent();
 
         qdService.sendEvent(syncStartEvent, streamInfo, appUri)
