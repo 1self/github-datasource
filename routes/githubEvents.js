@@ -204,7 +204,7 @@ module.exports = function (mongoRepository, qdService) {
         var commitObjects = [];
 
         var userEmailParts = /(.*?)(\+.*?)?(@.*)/g.exec(userInfo.email);
-        var userEmail = userEmailParts[1] + userEmailParts[3];
+        var userEmail = userEmailParts ? userEmailParts[1] + userEmailParts[3] : null;
 
         logger.logDebug(userInfo.githubUsername, 'flattening commits');
         logger.logDebug(userInfo.githubUsername, 'removing push email alias, [original, unaliased]', [userInfo.email, userEmail]);
@@ -218,9 +218,14 @@ module.exports = function (mongoRepository, qdService) {
                     repo: event.repo.name
                 }
 
-                var commitEmailParts = /(.*?)(\+.*?)?(@.*)/g.exec(commit.author.email);
-                var commitEmail = commitEmailParts[1] + commitEmailParts[3];
-                commitReq.committerIsAuthor = commitEmail === userEmail;
+                commitReq.committerIsAuthor = true;
+
+                if(userEmail){
+                    var commitEmailParts = /(.*?)(\+.*?)?(@.*)/g.exec(commit.author.email);
+                    var commitEmail = commitEmailParts[1] + commitEmailParts[3];
+                    commitReq.committerIsAuthor = commitEmail === userEmail;
+                }
+                
                 logger.logDebug(userInfo.githubUsername, 'commit req', commitReq);
                 commitObjects.push(commitReq);
             })
