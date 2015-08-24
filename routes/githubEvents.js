@@ -62,15 +62,15 @@ module.exports = function (mongoRepository, qdService) {
             if (event.type == 'PushEvent') {
                 var singleEventTemplate = {
                     'actionTags': [
-                        'Github',
-                        'Push'
+                        'push'
                     ],
                     'source': 'GitHub',
                     'objectTags': [
-                        'Computer',
-                        'Software',
-                        'Source',
-                        'Control'
+                        'git',
+                        'github',
+                        'computer',
+                        'software',
+                        'source-control'
                     ],
                     'id': event.payload['push_id'],
                     'childIds': _.map(event.payload.commits, function (c) {
