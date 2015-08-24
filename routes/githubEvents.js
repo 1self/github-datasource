@@ -109,7 +109,7 @@ module.exports = function (mongoRepository, qdService) {
                         'github',
                         'computer',
                         'software',
-                        'source control'
+                        'source-control'
                     ],
                     'dateTime': moment(event.commit.author.date).toISOString(),
                     'latestSyncField': {
