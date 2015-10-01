@@ -101,12 +101,12 @@ module.exports = function (app, mongoRepository, oneselfService) {
                             syncGithubEvents(callbackUrlForUser, stream.writeToken);
 
                             res.redirect(req.session.appUri + "/integrations");
-                        })
+                        });
                 }, function (error) {
                     res.render('error', {
                         error: error
                     });
-                })
+                });
         })
         .catch(function (error) {
             logError(userInfo.githubUsername, "Error in github callback: ", error);

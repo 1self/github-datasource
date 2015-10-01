@@ -31,16 +31,18 @@ module.exports = function () {
         };
         requestModule(options, function (e, response, body) {
             if (e) {
+                logger.error('error while registering stream: ', e);
                 deferred.reject("Error: ", e);
                 return;
             }
 
             if (response.statusCode === 401) {
+                logger.error('error while registering stream: ', [response.statusCode, response.body]);
                 deferred.reject('auth error: check your appId and appSecret', null);
                 return;
             }
             if (response.statusCode === 400) {
-                console.log(response.body);
+                logger.error('error while registering stream: ', [response.statusCode, response.body]);
                 deferred.reject('Invalid username and registrationToken', null);
                 return;
             }
