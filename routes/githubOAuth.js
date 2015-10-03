@@ -36,6 +36,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
         req.session.githubUsername = githubUsername;
         var oneselfUsername = req.session.oneselfUsername;
         var registrationToken = req.session.registrationToken;
+        logDebug('reading user and registration token out of the session');
         logDebug(githubUsername, "github User is: " + JSON.stringify(githubUser));
         var callbackUrl = GITHUB_INT_CONTEXT_URI + '/authSuccess?username=' + githubUsername
             + '&latestSyncField={{latestSyncField}}'

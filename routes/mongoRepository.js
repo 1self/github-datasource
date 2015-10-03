@@ -8,12 +8,14 @@ module.exports = function (mongoConnection) {
         console.log("connection object is : " + this.mongoConnection);
     };
 
+    var userCollection = 'githubDatasourceUsers';
+
     this.findByGithubUsername = function (username) {
         var deferred = Q.defer();
         var query = {
             githubUsername: username
         };
-        mongoConnection.collection('users').findOne(query, function (error, user) {
+        mongoConnection.collection(userCollection).findOne(query, function (error, user) {
             if (error) {
                 deferred.reject(error);
             } else {
@@ -25,7 +27,7 @@ module.exports = function (mongoConnection) {
 
     this.insert = function (document) {
         var deferred = Q.defer();
-        mongoConnection.collection('users').insert(document, function (error, numberOfDocsInserted) {
+        mongoConnection.collection(userCollection).insert(document, function (error, numberOfDocsInserted) {
             if (error) {
                 deferred.reject(error);
             } else {
@@ -37,7 +39,7 @@ module.exports = function (mongoConnection) {
 
     this.update = function (findQuery, updateQuery) {
         var deferred = Q.defer();
-        mongoConnection.collection('users', function (err, collection) {
+        mongoConnection.collection(userCollection, function (err, collection) {
             collection.update(findQuery, updateQuery, function (error, data) {
                 if (error) {
                     deferred.reject(error);
