@@ -101,7 +101,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
                                 .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
                             syncGithubEvents(callbackUrlForUser, stream.writeToken);
 
-                            res.redirect(req.session.appUri + "/integrations");
+                            res.redirect(req.session.redirectUri);
                         });
                 }, function (error) {
                     res.render('error', {
@@ -112,7 +112,7 @@ module.exports = function (app, mongoRepository, oneselfService) {
         .catch(function (error) {
             logError(userInfo.githubUsername, "Error in github callback: ", error);
         });
-    }
+    };
 
     var handleReauthCallback = function(req, res){
         var githubUser = req.user.profile;
@@ -158,24 +158,24 @@ module.exports = function (app, mongoRepository, oneselfService) {
         .then(function (user) {
             var query = {
                 _id: user._id
-            }
+            };
 
             var operation = {
                 $set: {
                     accessToken: userInfo.accessToken,
                     email: userInfo.email
                 }
-            }
+            };
                 
             mongoRepository.update(query, operation)
             .then(function () {
                 res.redirect(req.session.redirect);
-            })                
+            });                
         })
         .catch(function (error) {
             logError(userInfo.githubUsername, "Error in github callback: ", error);
         });
-    }
+    };
     var handleGithubCallback = function (req, res) {
         if(req.session.reauth){
             handleReauthCallback(req, res);

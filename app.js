@@ -136,6 +136,7 @@ app.get('/', function (req, res) {
     process.env.appUri = req.session.appUri;        
     req.session.oneselfUsername = req.query.username;
     req.session.registrationToken = req.query.token;
+    req.session.redirectUri = req.query.redirect_uri;
     logger.logInfo(req.query.username, 'github setup started: appUri, registrationToken', [req.session.appUri, req.query.token]);
     res.render('index');
 });
@@ -159,9 +160,10 @@ app.get('/reauth', function (req, res) {
 app.get('/reauth/complete', function (req, res) {
     //req.session.integrationUri = req.headers['x-forwarded-host'];
     req.session.appUri = null;
-    req.session.redirect = null
+    req.session.redirect = null;
     req.session.reauth = null;
     req.session.username = null;
+    req.session.registrationToken = null;
     logger.logInfo(req.query.username, 'reauthing complete, ', [req.session.appUri, req.query.token]);
     logger.logDebug(req.query.username, 'serving reauth complete page');
     res.render('reauthcomplete');
