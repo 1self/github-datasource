@@ -101,12 +101,12 @@ module.exports = function (app, mongoRepository, oneselfService) {
                                 .replace('{{latestSyncField}}', new Date(1970, 1, 1).toISOString());
                             syncGithubEvents(callbackUrlForUser, stream.writeToken);
 
-                            res.redirect(req.session.redirectUri);
+                            var redirectUri = req.session.redirectUri + '?success=true';
+                            res.redirect(redirectUri);
                         });
                 }, function (error) {
-                    res.render('error', {
-                        error: error
-                    });
+                    var redirectUri = req.session.redirectUri + '?success=false&error=server_error';
+                    res.redirect(redirectUri);  
                 });
         })
         .catch(function (error) {

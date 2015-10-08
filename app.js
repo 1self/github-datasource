@@ -8,12 +8,14 @@ var logger = require('morgan');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var mongoClient = require('mongodb').MongoClient;
+var _ = require('underscore');
 
 var GithubEvents = require('./routes/githubEvents');
 var MongoRepository = require('./routes/mongoRepository');
 var GithubOAuth = require('./routes/githubOAuth');
 var QdService = require('./routes/qdService');
 var app = express();
+
 
 /*jslint nomen: true */
 app.use(express.static(path.join(__dirname, 'public')));
@@ -44,6 +46,9 @@ winston.info('PORT=' + process.env.PORT);
 var port = process.env.PORT || 5001;
 
 winston.info('APIURI=' + process.env.APIURI);
+_.each(process.env, function(value, key){
+    winston.info(key + '=' + value);
+});
 
 winston.info('SESSION_SECRET=' + process.env.SESSION_SECRET.substring(0,2) + '...');
 var sessionSecret = process.env.SESSION_SECRET;
