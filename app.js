@@ -143,7 +143,7 @@ app.get('/', function (req, res) {
     req.session.registrationToken = req.query.token;
     req.session.redirectUri = req.query.redirect_uri;
     logger.logInfo(req.query.username, 'github setup started: appUri, registrationToken', [req.session.appUri, req.query.token]);
-    res.render('index');
+    res.redirect('/auth/github');
 });
 
 app.get('/reauth', function (req, res) {
