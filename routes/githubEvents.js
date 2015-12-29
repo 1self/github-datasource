@@ -8,6 +8,43 @@ var path = require('path');
 module.exports = function (mongoRepository, qdService) {
 
     var logger;
+    var self = this;
+
+    this.checkToken = function(userInfo, requestFunction, localLogger){
+        var deferred = Q.defer();
+        var options = {
+            url: "https://api.github.com/user/emails?access_token=" + userInfo.accessToken,
+            headers: {
+                "User-Agent": "1self"
+            }
+        };
+
+        requestFunction(options, function (err, res) {
+            if(err || res === undefined || res.statusCode !== 200){
+                localLogger.logError(userInfo.githubUsername, JSON.stringify(res));
+                localLogger.logError(userInfo.githubUsername, 'token is invalid');
+                var result = {
+                        message: err,
+                        code: 500
+                };
+
+                // it's likely when a sync error is seen that the github api is preventing token attacks
+                if(res.statusCode === 401){
+                    result.code = 401;
+                }   
+
+                localLogger.logError(userInfo.githubUsername, result);
+                deferred.reject(result);
+            }
+            else{
+                localLogger.logInfo(userInfo.githubUsername, 'token is valid');
+                deferred.resolve(res);
+            }
+        });
+        return deferred.promise;
+    };
+
+
 
     var getGithubPushEventsPerPage = function (page, userInfo) {
         
@@ -15,7 +52,7 @@ module.exports = function (mongoRepository, qdService) {
         var user_api_url = '/users/' + githubUsername;
         var client = github.client(userInfo.accessToken);
         logger.logDebug(userInfo.githubUsername, 'fetching page [page, user_api_url, accessToken]', [page, user_api_url, userInfo.accessToken.substring(0,2)]);
-        client.get(user_api_url, {}, function (err, status, body, headers) {
+        client.get(user_api_url, {}, function () {
         });
         var githubUser = client.user(githubUsername);
 
@@ -56,15 +93,14 @@ module.exports = function (mongoRepository, qdService) {
     };
 
     var convertEventsTo1SelfFormat = function (filteredEvents, username) {
-        var deferred = Q.defer();
+        
         var convertEventTo1SelfFormat = function (acc, event) {
             logger.logSilly(username, 'converting raw event: ', event);
-            if (event.type == 'PushEvent') {
+            if (event.type === 'PushEvent') {
                 var singleEventTemplate = {
                     'actionTags': [
                         'push'
                     ],
-                    'source': 'GitHub',
                     'objectTags': [
                         'git',
                         'github',
@@ -72,9 +108,9 @@ module.exports = function (mongoRepository, qdService) {
                         'software',
                         'source-control'
                     ],
-                    'id': event.payload['push_id'],
+                    'id': event.payload.push_id,
                     'childIds': _.map(event.payload.commits, function (c) {
-                            return c['sha']
+                            return c.sha;
                         }),
                     'dateTime': moment(event.created_at).toISOString(),
                     'latestSyncField': {
@@ -90,20 +126,19 @@ module.exports = function (mongoRepository, qdService) {
                 return acc.concat(singleEventTemplate);
 
             } 
-            else if (event.commit != undefined) {
+            else if (event.commit !== undefined) {
                 var extensionStats = _.reduce(event.files, function(result, file){
                     var ext = path.extname(file.filename).substring(1);
                     result[ext] = result[ext] || {};
-                    result[ext]['line-additions'] = (result[ext]['line-additions'] || 0) + file['additions'];
-                    result[ext]['line-deletions'] = (result[ext]['line-deletions'] || 0) + file['deletions'];
-                    result[ext]['line-changes'] = (result[ext]['line-changes'] || 0) + file['changes'];
+                    result[ext]['line-additions'] = (result[ext]['line-additions'] || 0) + file.additions;
+                    result[ext]['line-deletions'] = (result[ext]['line-deletions'] || 0) + file.deletions;
+                    result[ext]['line-changes'] = (result[ext]['line-changes'] || 0) + file.changes;
                     return result;
                 }, {});
-                var singleEventTemplate = {
+                var commitEventTemplate = {
                     'actionTags': [
                         'commit'
                     ],
-                    'source': 'GitHub',
                     'objectTags': [
                         'git',
                         'github',
@@ -132,19 +167,19 @@ module.exports = function (mongoRepository, qdService) {
                         'repo': event.repo,
                         'file-types': extensionStats
                     }
-                }
+                };
                 
                 if(event.committerIsAuthor === false){
-                    singleEventTemplate.actionTags = ['merge'];
+                    commitEventTemplate.actionTags = ['merge'];
                 }
 
                 if (event.commit.author.email !== event.commit.committer.email) {
-                    singleEventTemplate.actionTags = ['patch']
+                    commitEventTemplate.actionTags = ['patch'];
                 }
 
-                logger.logSilly(username, 'converted commit event: ', singleEventTemplate);
+                logger.logSilly(username, 'converted commit event: ', commitEventTemplate);
                 
-                return acc.concat(singleEventTemplate)
+                return acc.concat(commitEventTemplate);
             } 
             else {
                 logger.logSilly(username, 'couldnt convert as event is not a push or commit');
@@ -163,6 +198,7 @@ module.exports = function (mongoRepository, qdService) {
         if (_.isEmpty(events)) {
             logger.logDebug(userInfo.githubUsername, 'there are no events to send');
             deferred.resolve();
+            return;
         }
 
         logger.logDebug(userInfo.githubUsername, 'sending events to qd [event count, app uri]', [events.length, appUri]);
@@ -182,8 +218,19 @@ module.exports = function (mongoRepository, qdService) {
             'dateTime': moment().toISOString(),
             'objectTags': ['1self', 'integration', 'sync'],
             'actionTags': ['start'],
-            'source': '1self-GitHub',
             'properties': {}
+        };
+    };
+
+    var createSyncErrorEvent = function (code) {
+        return {
+            'dateTime': moment().toISOString(),
+            'objectTags': ['1self', 'integration', 'sync'],
+            'actionTags': ['error'],
+            'properties': {
+                code: code,
+                reauth: process.env.GITHUB_INT_CONTEXT_URI + '/reauth'
+            }
         };
     };
 
@@ -192,7 +239,6 @@ module.exports = function (mongoRepository, qdService) {
             'dateTime': moment().toISOString(),
             'objectTags': ['1self', 'integration', 'sync'],
             'actionTags': ['complete'],
-            'source': '1self-GitHub',
             'properties': {}
         };
     };
@@ -213,10 +259,10 @@ module.exports = function (mongoRepository, qdService) {
         _.each(filteredEvents, function (event) {
             _.each(event.payload.commits, function (commit) {
                 var commitReq = {
-                    url: commit['url'], 
-                    pushId: event.payload['push_id'], 
+                    url: commit.url, 
+                    pushId: event.payload.push_id, 
                     repo: event.repo.name
-                }
+                };
 
                 commitReq.committerIsAuthor = true;
 
@@ -228,7 +274,7 @@ module.exports = function (mongoRepository, qdService) {
                 
                 logger.logDebug(userInfo.githubUsername, 'commit req', commitReq);
                 commitObjects.push(commitReq);
-            })
+            });
         });
 
         logger.logDebug(userInfo.githubUsername, 'commit have been flattened, [commits]', commitObjects);
@@ -274,7 +320,7 @@ module.exports = function (mongoRepository, qdService) {
 
         Q.all(promiseArray).then(function (commitEvents) {
             logger.logDebug(userInfo.githubUsername, 'all commit events retrieved');
-            var events = filteredEvents.concat(commitEvents)
+            var events = filteredEvents.concat(commitEvents);
             deferred.resolve(events);
         }).catch(function (error) {
             logger.logError(userInfo.githubUsername, 'Error occurred :: getGithubCommitEvents', error);
@@ -288,9 +334,14 @@ module.exports = function (mongoRepository, qdService) {
         var syncStartEvent = createSyncStartEvent();
 
         qdService.sendEvent(syncStartEvent, streamInfo, appUri)
+            .then(function(){
+                logger.logInfo(userInfo.githubUsername, 'testing token validity');
+                logger.logInfo(userInfo.githubUsername, userInfo);
+                return self.checkToken(userInfo, request, logger);
+            })
             .then(function () {
                 logger.logInfo(userInfo.githubUsername, 'fetching events from github api', []);
-                return fetchGithubPushEvents(userInfo)
+                return fetchGithubPushEvents(userInfo);
             })
             .then(function (events) {
                 logger.logInfo(userInfo.githubUsername, 'filtering events to include only pushes, [event count]', [events.length]);
@@ -318,12 +369,18 @@ module.exports = function (mongoRepository, qdService) {
             })
             .catch(function (error) {
                 logger.logError(userInfo.githubUsername, 'Error occurred :: sendGithubEvents', error);
-            });
+                if(error.code === 401){
+                    logger.logError(userInfo.githubUsername, 'sending error event');
+                    var errorEvent = createSyncErrorEvent(error.code);
+                    return qdService.sendEvent(errorEvent, streamInfo, appUri);
+                }
+            })
+            .done() ;
     };
 
     this.setLogger = function(newLogger){
         logger = newLogger;
-    }
+    };
 
     
 };
