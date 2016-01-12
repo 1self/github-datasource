@@ -326,6 +326,7 @@ module.exports = function (mongoRepository, qdService) {
             deferred.resolve(events);
         }).catch(function (error) {
             logger.logError(userInfo.githubUsername, 'Error occurred :: getGithubCommitEvents', error);
+            deferred.reject(error);
         });
 
         return deferred.promise;
