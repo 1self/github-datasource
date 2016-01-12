@@ -269,7 +269,9 @@ module.exports = function (mongoRepository, qdService) {
                 if(userEmail){
                     var commitEmailParts = /(.*?)(\+.*?)?(@.*)/g.exec(commit.author.email);
                     var commitEmail = commitEmailParts[1] + commitEmailParts[3];
-                    commitReq.committerIsAuthor = commitEmail === userEmail;
+                    if(commitEmailParts.length === 4){
+                        commitReq.committerIsAuthor = commitEmail === userEmail;
+                    }
                 }
                 
                 logger.logDebug(userInfo.githubUsername, 'commit req', commitReq);
