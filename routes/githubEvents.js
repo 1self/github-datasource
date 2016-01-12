@@ -372,11 +372,9 @@ module.exports = function (mongoRepository, qdService) {
             })
             .catch(function (error) {
                 logger.logError(userInfo.githubUsername, 'Error occurred :: sendGithubEvents', error);
-                if(error.code === 401){
-                    logger.logError(userInfo.githubUsername, 'sending error event');
-                    var errorEvent = createSyncErrorEvent(error.code);
-                    return qdService.sendEvent(errorEvent, streamInfo, appUri);
-                }
+                logger.logError(userInfo.githubUsername, 'sending error event');
+                var errorEvent = createSyncErrorEvent(error.code);
+                return qdService.sendEvent(errorEvent, streamInfo, appUri);
             })
             .done() ;
     };
